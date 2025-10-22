@@ -73,27 +73,27 @@ const FamilySetup: React.FC = () => {
   // Se já tem família, mostra o código
   if (userData?.familyId && family) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 w-full max-w-md">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-lg mb-4">
-              <Users className="w-8 h-8 text-blue-600" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4">
+              <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Sua Família
             </h1>
-            <p className="text-gray-600">{family.nome}</p>
+            <p className="text-gray-600 dark:text-gray-400">{family.nome}</p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 mb-6">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-600 mb-6">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
               Código da Família
             </h2>
-            <p className="text-xs text-gray-600 mb-3">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
               Compartilhe este código com outros membros da família
             </p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 bg-white px-4 py-3 rounded-lg border border-gray-300 text-sm font-mono break-all text-gray-900">
+              <code className="flex-1 bg-white dark:bg-gray-900 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-mono break-all text-gray-900 dark:text-white">
                 {family.id}
               </code>
               <button
@@ -121,8 +121,8 @@ const FamilySetup: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 w-full max-w-md overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full max-w-md overflow-hidden">
         {/* Header */}
         <div className="bg-blue-600 px-8 py-12 text-white text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-lg mb-4">
@@ -138,13 +138,13 @@ const FamilySetup: React.FC = () => {
 
         <div className="px-8 py-8">
           {/* Tabs */}
-          <div className="flex gap-2 mb-8 bg-gray-100 p-1 rounded-lg">
+          <div className="flex gap-2 mb-8 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
             <button
               onClick={() => setIsCreating(true)}
               className={`flex-1 py-2.5 px-4 rounded-md font-medium transition-colors ${
                 isCreating
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               Criar Família
@@ -153,8 +153,8 @@ const FamilySetup: React.FC = () => {
               onClick={() => setIsCreating(false)}
               className={`flex-1 py-2.5 px-4 rounded-md font-medium transition-colors ${
                 !isCreating
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               Entrar em Família
@@ -164,14 +164,14 @@ const FamilySetup: React.FC = () => {
           {isCreating ? (
             <form onSubmit={handleCreateFamily} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                   Nome da Família
                 </label>
                 <input
                   type="text"
                   value={familyName}
                   onChange={(e) => setFamilyName(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 transition-colors outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white transition-colors outline-none"
                   placeholder="Ex: Família Silva"
                 />
               </div>
@@ -194,17 +194,17 @@ const FamilySetup: React.FC = () => {
           ) : (
             <form onSubmit={handleJoinFamily} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                   Código da Família
                 </label>
                 <input
                   type="text"
                   value={familyCode}
                   onChange={(e) => setFamilyCode(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 transition-colors outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white transition-colors outline-none"
                   placeholder="Cole o código aqui"
                 />
-                <p className="text-xs text-gray-600 mt-2">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
                   Peça o código para um membro da família
                 </p>
               </div>

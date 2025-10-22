@@ -76,14 +76,14 @@ const IncomeForm: React.FC<IncomeFormProps> = ({ onSuccess }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold text-gray-900">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
           Novo Rendimento
         </h3>
         <button
           onClick={() => setIsOpen(false)}
-          className="text-gray-500 hover:text-gray-900 transition-colors"
+          className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -91,21 +91,21 @@ const IncomeForm: React.FC<IncomeFormProps> = ({ onSuccess }) => {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-900 mb-2">
+          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
             Nome do Rendimento
           </label>
           <input
             type="text"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 transition-colors outline-none"
+            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 dark:text-white transition-colors outline-none"
             placeholder="Ex: Salário, Freelance, Aluguel..."
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
+            <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
               Valor
             </label>
             <input
@@ -113,20 +113,20 @@ const IncomeForm: React.FC<IncomeFormProps> = ({ onSuccess }) => {
               step="0.01"
               value={valor}
               onChange={(e) => setValor(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 transition-colors outline-none"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 dark:text-white transition-colors outline-none"
               placeholder="0,00"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-2">
+            <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
               Data
             </label>
             <input
               type="date"
               value={data}
               onChange={(e) => setData(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 transition-colors outline-none"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 dark:text-white transition-colors outline-none"
             />
           </div>
         </div>
@@ -142,7 +142,7 @@ const IncomeForm: React.FC<IncomeFormProps> = ({ onSuccess }) => {
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+            className="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           >
             Cancelar
           </button>

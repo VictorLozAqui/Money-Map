@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { FamilyProvider } from './contexts/FamilyContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { CategoryProvider } from './contexts/CategoryContext';
 import PrivateRoute from './components/PrivateRoute';
 import FamilyGuard from './components/FamilyGuard';
 
@@ -15,12 +17,16 @@ import Family from './pages/Family';
 import Profile from './pages/Profile';
 import FamilySetup from './pages/FamilySetup';
 import SavingsGoal from './pages/SavingsGoal';
+import Reports from './pages/Reports';
+import Settings from './pages/Settings';
 
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <FamilyProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <FamilyProvider>
+            <CategoryProvider>
           <Toaster
             position="top-right"
             toastOptions={{
@@ -107,10 +113,34 @@ function App() {
               }
             />
             
+            <Route
+              path="/relatorios"
+              element={
+                <PrivateRoute>
+                  <FamilyGuard>
+                    <Reports />
+                  </FamilyGuard>
+                </PrivateRoute>
+              }
+            />
+            
+            <Route
+              path="/configuracoes"
+              element={
+                <PrivateRoute>
+                  <FamilyGuard>
+                    <Settings />
+                  </FamilyGuard>
+                </PrivateRoute>
+              }
+            />
+            
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-        </FamilyProvider>
-      </AuthProvider>
+            </CategoryProvider>
+          </FamilyProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }

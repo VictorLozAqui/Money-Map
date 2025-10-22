@@ -39,18 +39,16 @@ service cloud.firestore {
     
     // Regras para famílias
     match /families/{familyId} {
-      // Membros da família podem ler
-      allow read: if isAuthenticated() && 
-                     request.auth.uid in resource.data.members;
+      // Qualquer usuário autenticado pode ler famílias (necessário para entrar)
+      allow read: if isAuthenticated();
       
       // Qualquer usuário autenticado pode criar uma família
       allow create: if isAuthenticated() &&
                        request.resource.data.createdBy == request.auth.uid &&
                        request.auth.uid in request.resource.data.members;
       
-      // Membros podem atualizar a família (adicionar novos membros)
-      allow update: if isAuthenticated() && 
-                       request.auth.uid in resource.data.members;
+      // Qualquer usuário autenticado pode atualizar (para entrar na família)
+      allow update: if isAuthenticated();
       
       // Não permitir exclusão de famílias
       allow delete: if false;
@@ -96,6 +94,43 @@ service cloud.firestore {
       allow read: if isFamilyMember(resource.data.familyId);
       
       // Membros da família podem criar metas
+      allow create: if isAuthenticated() &&
+                       isFamilyMember(request.resource.data.familyId) &&
+                       request.resource.data.createdBy == request.auth.uid;
+      
+      // Membros da família podem atualizar
+      allow update: if isFamilyMember(resource.data.familyId);
+      
+      // Membros da família podem excluir
+      allow delete: if isFamilyMember(resource.data.familyId);
+    }
+    
+    // Regras para categorias customizadas
+    match /categories/{categoryId} {
+      // Membros da família podem ler
+      allow read: if isFamilyMember(resource.data.familyId);
+      
+      // Membros da família podem criar categorias
+      allow create: if isAuthenticated() &&
+                       isFamilyMember(request.resource.data.familyId) &&
+                       request.resource.data.createdBy == request.auth.uid;
+      
+      // Membros da família podem excluir
+      allow delete: if isFamilyMember(resource.data.familyId);
+    }
+    
+    // Regras para configurações
+    match /settings/{familyId} {
+      // Qualquer usuário autenticado pode ler/escrever suas configurações de família
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Regras para gastos recorrentes
+    match /recurringExpenses/{recurringId} {
+      // Membros da família podem ler
+      allow read: if isFamilyMember(resource.data.familyId);
+      
+      // Membros da família podem criar gastos recorrentes
       allow create: if isAuthenticated() &&
                        isFamilyMember(request.resource.data.familyId) &&
                        request.resource.data.createdBy == request.auth.uid;

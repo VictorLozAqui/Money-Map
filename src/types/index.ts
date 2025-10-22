@@ -44,6 +44,19 @@ export interface SavingsGoal {
   createdAt: Date;
 }
 
+export interface RecurringExpense {
+  id: string;
+  familyId: string;
+  nome: string;
+  valor: number;
+  tipo: string;
+  diaDoMes: number; // Dia do mês em que o gasto deve ser lançado (1-31)
+  createdBy: string;
+  createdAt: Date;
+  active: boolean; // Se o gasto recorrente está ativo
+  lastProcessedMonth?: string; // "YYYY-MM" para controlar se já foi processado no mês
+}
+
 export const ExpenseCategories = [
   'Alimentação',
   'Transporte',

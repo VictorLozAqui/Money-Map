@@ -1,25 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import MetricCard from '../components/MetricCard';
-import ExpensePieChart from '../components/charts/ExpensePieChart';
-import FinancialLineChart from '../components/charts/FinancialLineChart';
+import ExpensePieChart3D from '../components/charts/ExpensePieChart3D';
+import FinancialLineChart3D from '../components/charts/FinancialLineChart3D';
 import { useFamily } from '../contexts/FamilyContext';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { Income, Expense } from '../types';
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Repeat } from 'lucide-react';
+import { useExpenseNotifications } from '../hooks/useExpenseNotifications';
+import { useRecurringExpensesProcessor } from '../hooks/useRecurringExpensesProcessor';
 
 const Dashboard: React.FC = () => {
   const { family } = useFamily();
+  
+  // Processa gastos recorrentes automaticamente
+  useRecurringExpensesProcessor();
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [recurringExpenses, setRecurringExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notificationSettings, setNotificationSettings] = useState({
+    dailyLimit: 0,
+    monthlyLimit: 0,
+    singleExpenseLimit: 0
+  });
+
+  // Hook de notificações
+  useExpenseNotifications(expenses, notificationSettings);
+
+  // Calcular previsão de gastos fixos para o mês
+  const predictedExpenses = recurringExpenses.reduce((sum, re) => sum + re.valor, 0);
+  const actualExpensesThisMonth = expenses.filter(e => {
+    const expenseMonth = new Date(e.data).toISOString().slice(0, 7);
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    return expenseMonth === currentMonth;
+  }).reduce((sum, e) => sum + e.valor, 0);
+  const projectedTotal = actualExpensesThisMonth + (predictedExpenses - actualExpensesThisMonth);
 
   useEffect(() => {
     if (!family) {
       setLoading(false);
       return;
     }
+
+    // Carregar configurações de notificação
+    const loadSettings = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, 'settings', family.id));
+        if (settingsDoc.exists()) {
+          setNotificationSettings(settingsDoc.data() as any);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar configurações:', error);
+      }
+    };
+
+    loadSettings();
 
     // Listener para rendimentos
     const incomesQuery = query(
@@ -60,6 +97,30 @@ const Dashboard: React.FC = () => {
     };
   }, [family]);
 
+  // Carregar gastos recorrentes para previsão
+  useEffect(() => {
+    if (!family) {
+      setRecurringExpenses([]);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'recurringExpenses'),
+      where('familyId', '==', family.id),
+      where('active', '==', true)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const recurring = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setRecurringExpenses(recurring);
+    });
+
+    return () => unsubscribe();
+  }, [family]);
+
   // Calcula métricas
   const totalIncomes = incomes.reduce((sum, inc) => sum + inc.valor, 0);
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.valor, 0);
@@ -92,9 +153,9 @@ const Dashboard: React.FC = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Visão geral das suas finanças</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400">Visão geral das suas finanças</p>
         </div>
 
         {/* Métricas */}
@@ -119,37 +180,69 @@ const Dashboard: React.FC = () => {
           />
         </div>
 
+        {/* Previsão de Gastos Fixos */}
+        {recurringExpenses.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <Repeat className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Previsão de Gastos Fixos</h2>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Baseado em {recurringExpenses.length} gasto(s) fixo(s)</p>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-2 font-medium">Gastos Fixos Mensais</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{predictedExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+            </div>
+
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Próximos gastos fixos:</p>
+              <div className="space-y-2">
+                {recurringExpenses.map((re: any) => (
+                  <div key={re.id} className="flex items-center justify-between text-sm py-2 border-b border-blue-100 dark:border-blue-900/30 last:border-0">
+                    <span className="text-gray-700 dark:text-gray-300">{re.nome} - Dia {re.diaDoMes}</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{re.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
               Gastos por Categoria
             </h2>
-            <ExpensePieChart expenses={expenses} />
+            <ExpensePieChart3D expenses={expenses} />
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Evolução Financeira (Últimos 6 meses)
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+              Evolução Financeira (Mês Atual)
             </h2>
-            <FinancialLineChart incomes={incomes} expenses={expenses} months={6} />
+            <FinancialLineChart3D incomes={incomes} expenses={expenses} />
           </div>
         </div>
 
         {/* Resumo recente */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
               Últimos Rendimentos
             </h2>
             {incomes.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">Nenhum rendimento cadastrado</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-8">Nenhum rendimento cadastrado</p>
             ) : (
               <div className="space-y-2">
                 {incomes.slice(0, 5).map(income => (
-                  <div key={income.id} className="flex justify-between items-center py-3 border-b border-gray-200 last:border-0">
-                    <span className="text-gray-900 font-medium">{income.nome}</span>
-                    <span className="text-green-600 font-semibold">
+                  <div key={income.id} className="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700 last:border-0">
+                    <span className="text-gray-900 dark:text-white font-medium">{income.nome}</span>
+                    <span className="text-green-600 dark:text-green-400 font-semibold">
                       +{income.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -158,21 +251,21 @@ const Dashboard: React.FC = () => {
             )}
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
               Últimos Gastos
             </h2>
             {expenses.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">Nenhum gasto cadastrado</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-8">Nenhum gasto cadastrado</p>
             ) : (
               <div className="space-y-2">
                 {expenses.slice(0, 5).map(expense => (
-                  <div key={expense.id} className="flex justify-between items-center py-3 border-b border-gray-200 last:border-0">
+                  <div key={expense.id} className="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700 last:border-0">
                     <div>
-                      <span className="text-gray-900 font-medium">{expense.nome}</span>
-                      <span className="text-xs text-gray-500 ml-2">({expense.tipo})</span>
+                      <span className="text-gray-900 dark:text-white font-medium">{expense.nome}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">({expense.tipo})</span>
                     </div>
-                    <span className="text-red-600 font-semibold">
+                    <span className="text-red-600 dark:text-red-400 font-semibold">
                       -{expense.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>

@@ -170,18 +170,16 @@
 Para expandir a aplicação no futuro:
 
 - ✅ Edição de rendimentos/gastos
-- [ ] Filtros avançados (por período, categoria, membro)
-- [ ] Exportar dados (PDF, Excel)
+- ✅Filtros avançados (por período, categoria, membro)
+- ✅ Exportar dados (PDF, Excel)
 - ✅ Metas financeiras
-- [ ] Notificações de gastos altos
-- [ ] Modo escuro
-- [ ] Múltiplas moedas
-- [ ] Categorias customizadas
-- [ ] Anexar comprovantes
-- [ ] Relatórios mensais automáticos
-- [ ] Comparativo entre meses
-- [ ] Previsão de gastos
-- [ ] Lembretes de contas a pagar
+- ✅ Notificações de gastos altos
+- ✅ Modo escuro
+- ✅ Categorias customizadas
+- ✅ Relatórios mensais automáticos
+- ✅ Comparativo entre meses
+- ✅ Previsão de gastos
+
 
 ## ✅ Status Final
 
