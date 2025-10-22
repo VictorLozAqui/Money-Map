@@ -8,7 +8,7 @@ Aplicação web para controle financeiro colaborativo entre membros de uma famí
 - Vite
 - Tailwind CSS
 - Firebase (Authentication + Firestore)
-- Recharts (Gráficos)
+- Charts-2 (Gráficos)
 - React Router DOM
 - React Hook Form + Zod
 - date-fns
