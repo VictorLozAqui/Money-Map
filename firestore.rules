@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função auxiliar para verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Função auxiliar para verificar se o usuário é o dono do documento
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Função auxiliar para pegar a família do usuário
+    function getUserFamily() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId;
+    }
+    
+    // Função para verificar se o usuário é membro da família
+    function isFamilyMember(familyId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             getUserFamily() == familyId;
+    }
+    
+    // Regras para usuários
+    match /users/{userId} {
+      // Qualquer usuário autenticado pode ler perfis
+      allow read: if isAuthenticated();
+      
+      // Apenas o próprio usuário pode criar/atualizar seu perfil
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+      
+      // Não permitir exclusão de usuários
+      allow delete: if false;
+    }
+    
+    // Regras para famílias
+    match /families/{familyId} {
+      // Membros da família podem ler
+      allow read: if isAuthenticated() && 
+                     request.auth.uid in resource.data.members;
+      
+      // Qualquer usuário autenticado pode criar uma família
+      allow create: if isAuthenticated() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.auth.uid in request.resource.data.members;
+      
+      // Membros podem atualizar a família (adicionar novos membros)
+      allow update: if isAuthenticated() && 
+                       request.auth.uid in resource.data.members;
+      
+      // Não permitir exclusão de famílias
+      allow delete: if false;
+    }
+    
+    // Regras para rendimentos
+    match /incomes/{incomeId} {
+      // Membros da família podem ler
+      allow read: if isFamilyMember(resource.data.familyId);
+      
+      // Membros da família podem criar rendimentos
+      allow create: if isAuthenticated() &&
+                       isFamilyMember(request.resource.data.familyId) &&
+                       request.resource.data.addedBy == request.auth.uid;
+      
+      // Membros da família podem atualizar
+      allow update: if isFamilyMember(resource.data.familyId);
+      
+      // Membros da família podem excluir
+      allow delete: if isFamilyMember(resource.data.familyId);
+    }
+    
+    // Regras para gastos
+    match /expenses/{expenseId} {
+      // Membros da família podem ler
+      allow read: if isFamilyMember(resource.data.familyId);
+      
+      // Membros da família podem criar gastos
+      allow create: if isAuthenticated() &&
+                       isFamilyMember(request.resource.data.familyId) &&
+                       request.resource.data.addedBy == request.auth.uid;
+      
+      // Membros da família podem atualizar
+      allow update: if isFamilyMember(resource.data.familyId);
+      
+      // Membros da família podem excluir
+      allow delete: if isFamilyMember(resource.data.familyId);
+    }
+    
+    // Regras para metas de poupança
+    match /savingsGoals/{goalId} {
+      // Membros da família podem ler
+      allow read: if isFamilyMember(resource.data.familyId);
+      
+      // Membros da família podem criar metas
+      allow create: if isAuthenticated() &&
+                       isFamilyMember(request.resource.data.familyId) &&
+                       request.resource.data.createdBy == request.auth.uid;
+      
+      // Membros da família podem atualizar
+      allow update: if isFamilyMember(resource.data.familyId);
+      
+      // Membros da família podem excluir
+      allow delete: if isFamilyMember(resource.data.familyId);
+    }
+  }
+}
+
