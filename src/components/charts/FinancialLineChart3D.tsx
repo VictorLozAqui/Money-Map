@@ -151,6 +151,7 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
             dataKey="rendimentos"
             fill="url(#colorRendimentos)"
             stroke="none"
+            legendType="none"
           />
           
           <Area
@@ -158,6 +159,7 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
             dataKey="gastos"
             fill="url(#colorGastos)"
             stroke="none"
+            legendType="none"
           />
           
           {/* Linhas principais com sombra */}

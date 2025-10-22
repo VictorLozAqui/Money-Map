@@ -95,6 +95,7 @@ const ExpensePieChart3D: React.FC<ExpensePieChartProps> = ({ expenses }) => {
             fillOpacity={0.1}
             dataKey="value"
             isAnimationActive={false}
+            legendType="none"
           />
           
           {/* Gráfico principal com gradientes */}
