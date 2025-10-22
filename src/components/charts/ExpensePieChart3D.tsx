@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Expense } from '../../types';
 
@@ -19,6 +19,26 @@ const COLORS = [
 ];
 
 const ExpensePieChart3D: React.FC<ExpensePieChartProps> = ({ expenses }) => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Detecta o modo escuro inicial
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    
+    checkDarkMode();
+    
+    // Observer para detectar mudanças no modo
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    return () => observer.disconnect();
+  }, []);
+
   // Agrupa gastos por categoria
   const expensesByCategory = expenses.reduce((acc, expense) => {
     if (!acc[expense.tipo]) {
@@ -53,11 +73,15 @@ const ExpensePieChart3D: React.FC<ExpensePieChartProps> = ({ expenses }) => {
       <text
         x={x}
         y={y}
-        fill="black"
+        fill={isDarkMode ? '#E5E7EB' : '#1F2937'}
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
         className="font-semibold text-sm"
-        style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+        style={{ 
+          textShadow: isDarkMode 
+            ? '0 2px 8px rgba(0,0,0,0.8)' 
+            : '0 2px 4px rgba(255,255,255,0.8), 0 0 2px rgba(0,0,0,0.3)' 
+        }}
       >
         {`${(percent * 100).toFixed(0)}%`}
       </text>
@@ -96,6 +120,9 @@ const ExpensePieChart3D: React.FC<ExpensePieChartProps> = ({ expenses }) => {
             dataKey="value"
             isAnimationActive={false}
             legendType="none"
+            stroke="none"
+            labelLine={false}
+            label={false}
           />
           
           {/* Gráfico principal com gradientes */}
@@ -109,7 +136,7 @@ const ExpensePieChart3D: React.FC<ExpensePieChartProps> = ({ expenses }) => {
             label={renderCustomizedLabel}
             outerRadius={120}
             innerRadius={60}
-            paddingAngle={2}
+            paddingAngle={0}
             dataKey="value"
             filter="url(#shadow)"
           >
@@ -117,19 +144,19 @@ const ExpensePieChart3D: React.FC<ExpensePieChartProps> = ({ expenses }) => {
               <Cell
                 key={`cell-${index}`}
                 fill={`url(#gradient-${index % COLORS.length})`}
-                stroke="#ffffff"
-                strokeWidth={2}
+                stroke="none"
               />
             ))}
           </Pie>
           
           <Tooltip
             contentStyle={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
               border: 'none',
               borderRadius: '8px',
               boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-              padding: '12px'
+              padding: '12px',
+              color: isDarkMode ? '#F3F4F6' : '#1F2937'
             }}
             formatter={(value: number) => [
               value.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),

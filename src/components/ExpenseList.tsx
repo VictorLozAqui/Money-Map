@@ -97,7 +97,9 @@ const ExpenseList: React.FC = () => {
           onSuccess={() => setEditingExpense(null)}
         />
       )}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      
+      {/* Layout Desktop - Tabela */}
+      <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
@@ -176,6 +178,61 @@ const ExpenseList: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Layout Mobile - Cards */}
+      <div className="md:hidden space-y-3">
+        {expenses.map((expense) => (
+          <div
+            key={expense.id}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                  {expense.nome}
+                </h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {expense.tipo}
+                  </span>
+                </div>
+                <p className="text-lg text-red-600 dark:text-red-400 font-bold">
+                  -{expense.valor.toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  })}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingExpense(expense)}
+                  className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                  title="Editar"
+                >
+                  <Edit className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => handleDelete(expense.id)}
+                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  title="Excluir"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {format(expense.data, "dd/MM/yyyy", { locale: ptBR })}
+              </div>
+              <div>
+                {getMemberName(expense.addedBy)}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </>
   );

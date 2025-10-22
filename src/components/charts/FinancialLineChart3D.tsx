@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LineChart,
   Line,
@@ -21,6 +21,25 @@ interface FinancialLineChart3DProps {
 }
 
 const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, expenses }) => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Detecta o modo escuro inicial
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    
+    checkDarkMode();
+    
+    // Observer para detectar mudanças no modo
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    return () => observer.disconnect();
+  }, []);
   // Encontra o último dia com transação
   const allDates = [
     ...incomes.map(i => i.data),
@@ -100,21 +119,21 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
           
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="#e5e7eb"
+            stroke={isDarkMode ? '#374151' : '#e5e7eb'}
             strokeOpacity={0.5}
           />
           
           <XAxis
             dataKey="date"
-            stroke="#6B7280"
+            stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
             style={{ fontSize: '12px', fontWeight: '500' }}
-            tick={{ fill: '#6B7280' }}
+            tick={{ fill: isDarkMode ? '#D1D5DB' : '#6B7280' }}
           />
           
           <YAxis
-            stroke="#6B7280"
+            stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
             style={{ fontSize: '12px', fontWeight: '500' }}
-            tick={{ fill: '#6B7280' }}
+            tick={{ fill: isDarkMode ? '#D1D5DB' : '#6B7280' }}
             tickFormatter={(value) =>
               value.toLocaleString('pt-BR', {
                 minimumFractionDigits: 0,
@@ -125,16 +144,21 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
           
           <Tooltip
             contentStyle={{
-              backgroundColor: 'rgba(255, 255, 255, 0.98)',
+              backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.98)' : 'rgba(255, 255, 255, 0.98)',
               border: 'none',
               borderRadius: '12px',
               boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-              padding: '16px'
+              padding: '16px',
+              color: isDarkMode ? '#F3F4F6' : '#1F2937'
             }}
             formatter={(value: number) =>
               value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
             }
-            labelStyle={{ fontWeight: '600', marginBottom: '8px' }}
+            labelStyle={{ 
+              fontWeight: '600', 
+              marginBottom: '8px',
+              color: isDarkMode ? '#F3F4F6' : '#1F2937'
+            }}
           />
           
           <Legend
