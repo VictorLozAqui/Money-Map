@@ -9,7 +9,9 @@
     <title>Money Map</title>
     <script>
       // Aplicar modo escuro imediatamente para evitar flash
-      if (localStorage.getItem('darkMode') === 'true') {
+      const darkMode = localStorage.getItem('darkMode');
+      // Se não houver preferência salva (null), modo escuro é o padrão
+      if (darkMode === null || darkMode === 'true') {
         document.documentElement.classList.add('dark');
       }
     </script>

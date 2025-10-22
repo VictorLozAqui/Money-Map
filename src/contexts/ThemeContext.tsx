@@ -10,6 +10,15 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
+    const migrated = localStorage.getItem('darkModeV2');
+    
+    // Se ainda não foi migrado para a v2, forçar modo escuro como padrão
+    if (!migrated) {
+      localStorage.setItem('darkModeV2', 'true');
+      localStorage.setItem('darkMode', 'true');
+      return true;
+    }
+    
     // Se não houver preferência salva, modo escuro é o padrão
     return saved === null ? true : saved === 'true';
   });
