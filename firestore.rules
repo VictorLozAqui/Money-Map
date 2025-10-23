@@ -141,6 +141,23 @@ service cloud.firestore {
       // Membros da família podem excluir
       allow delete: if isFamilyMember(resource.data.familyId);
     }
+    
+    // Regras para rendimentos recorrentes
+    match /recurringIncomes/{recurringId} {
+      // Membros da família podem ler (permite queries com where)
+      allow read: if isAuthenticated() && 
+                     request.auth.uid != null;
+      
+      // Membros da família podem criar rendimentos recorrentes
+      allow create: if isAuthenticated() &&
+                       request.resource.data.createdBy == request.auth.uid;
+      
+      // Membros da família podem atualizar
+      allow update: if isAuthenticated();
+      
+      // Membros da família podem excluir
+      allow delete: if isAuthenticated();
+    }
   }
 }
 

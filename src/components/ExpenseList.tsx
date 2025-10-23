@@ -13,7 +13,7 @@ import { db } from '../services/firebase';
 import { Expense } from '../types';
 import toast from 'react-hot-toast';
 import { Trash2, Calendar, Tag, Edit } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ExpenseEditModal from './ExpenseEditModal';
 
@@ -44,7 +44,16 @@ const ExpenseList: React.FC = () => {
         createdAt: doc.data().createdAt.toDate()
       })) as Expense[];
       
-      setExpenses(expensesData);
+      // Filtrar apenas gastos do mês atual
+      const now = new Date();
+      const monthStart = startOfMonth(now);
+      const monthEnd = endOfMonth(now);
+      
+      const currentMonthExpenses = expensesData.filter(expense => 
+        expense.data >= monthStart && expense.data <= monthEnd
+      );
+      
+      setExpenses(currentMonthExpenses);
       setLoading(false);
     });
 

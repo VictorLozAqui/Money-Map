@@ -123,7 +123,9 @@ const Settings: React.FC = () => {
         nome: recurring.nome,
         valor: recurring.valor,
         tipo: recurring.tipo,
-        diaDoMes: recurring.diaDoMes
+        diaDoMes: recurring.diaDoMes,
+        mesDoAno: recurring.mesDoAno,
+        frequencia: recurring.frequencia
       });
       toast.success('Gasto fixo atualizado!');
       setEditingRecurring(null);
@@ -335,7 +337,7 @@ const Settings: React.FC = () => {
           </div>
 
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-            Gastos que se repetem automaticamente todo mês. Adicione um gasto fixo ao criar um novo gasto e marcando a opção "Gasto Fixo".
+            Gastos que se repetem automaticamente (mensalmente ou anualmente). Adicione um gasto fixo ao criar um novo gasto e marcando a opção "Gasto Fixo".
           </p>
 
           {recurringExpenses.length === 0 ? (
@@ -357,7 +359,11 @@ const Settings: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {recurring.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} • Todo dia {recurring.diaDoMes} do mês
+                      {recurring.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} • {
+                        recurring.frequencia === 'anual' 
+                          ? `Anual - Todo dia ${recurring.diaDoMes}/${recurring.mesDoAno || 1}`
+                          : `Mensal - Todo dia ${recurring.diaDoMes}`
+                      }
                     </p>
                   </div>
                   
@@ -432,6 +438,23 @@ const Settings: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      Frequência
+                    </label>
+                    <select
+                      value={editingRecurring.frequencia}
+                      onChange={(e) => setEditingRecurring({ 
+                        ...editingRecurring, 
+                        frequencia: e.target.value as 'mensal' | 'anual' 
+                      })}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none"
+                    >
+                      <option value="mensal">Mensal</option>
+                      <option value="anual">Anual</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                       Dia do Mês (1-31)
                     </label>
                     <input
@@ -443,6 +466,22 @@ const Settings: React.FC = () => {
                       className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none"
                     />
                   </div>
+
+                  {editingRecurring.frequencia === 'anual' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                        Mês do Ano (1-12)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="12"
+                        value={editingRecurring.mesDoAno || 1}
+                        onChange={(e) => setEditingRecurring({ ...editingRecurring, mesDoAno: Number(e.target.value) })}
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none"
+                      />
+                    </div>
+                  )}
 
                   <div className="flex gap-2 pt-2">
                     <button

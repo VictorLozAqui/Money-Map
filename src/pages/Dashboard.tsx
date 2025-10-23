@@ -10,12 +10,15 @@ import { Income, Expense } from '../types';
 import { TrendingUp, TrendingDown, Wallet, Repeat } from 'lucide-react';
 import { useExpenseNotifications } from '../hooks/useExpenseNotifications';
 import { useRecurringExpensesProcessor } from '../hooks/useRecurringExpensesProcessor';
+import { useRecurringIncomesProcessor } from '../hooks/useRecurringIncomesProcessor';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 const Dashboard: React.FC = () => {
   const { family } = useFamily();
   
-  // Processa gastos recorrentes automaticamente
+  // Processa gastos e rendimentos recorrentes automaticamente
   useRecurringExpensesProcessor();
+  useRecurringIncomesProcessor();
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [recurringExpenses, setRecurringExpenses] = useState<any[]>([]);
@@ -29,14 +32,17 @@ const Dashboard: React.FC = () => {
   // Hook de notificações
   useExpenseNotifications(expenses, notificationSettings);
 
-  // Calcular previsão de gastos fixos para o mês
-  const predictedExpenses = recurringExpenses.reduce((sum, re) => sum + re.valor, 0);
-  const actualExpensesThisMonth = expenses.filter(e => {
-    const expenseMonth = new Date(e.data).toISOString().slice(0, 7);
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    return expenseMonth === currentMonth;
-  }).reduce((sum, e) => sum + e.valor, 0);
-  const projectedTotal = actualExpensesThisMonth + (predictedExpenses - actualExpensesThisMonth);
+  // Separar gastos fixos mensais e anuais
+  const monthlyRecurringExpenses = recurringExpenses.filter((re: any) => 
+    re.frequencia === 'mensal' || !re.frequencia // Compatibilidade com gastos antigos
+  );
+  const annualRecurringExpenses = recurringExpenses.filter((re: any) => 
+    re.frequencia === 'anual'
+  );
+
+  // Calcular previsão de gastos fixos mensais
+  const predictedMonthlyExpenses = monthlyRecurringExpenses.reduce((sum, re: any) => sum + re.valor, 0);
+  const predictedAnnualExpenses = annualRecurringExpenses.reduce((sum, re: any) => sum + re.valor, 0);
 
   useEffect(() => {
     if (!family) {
@@ -71,7 +77,17 @@ const Dashboard: React.FC = () => {
         data: doc.data().data.toDate(),
         createdAt: doc.data().createdAt.toDate()
       })) as Income[];
-      setIncomes(incomesData);
+      
+      // Filtrar apenas rendimentos do mês atual
+      const now = new Date();
+      const monthStart = startOfMonth(now);
+      const monthEnd = endOfMonth(now);
+      
+      const currentMonthIncomes = incomesData.filter(income => 
+        income.data >= monthStart && income.data <= monthEnd
+      );
+      
+      setIncomes(currentMonthIncomes);
     });
 
     // Listener para gastos
@@ -87,7 +103,17 @@ const Dashboard: React.FC = () => {
         data: doc.data().data.toDate(),
         createdAt: doc.data().createdAt.toDate()
       })) as Expense[];
-      setExpenses(expensesData);
+      
+      // Filtrar apenas gastos do mês atual
+      const now = new Date();
+      const monthStart = startOfMonth(now);
+      const monthEnd = endOfMonth(now);
+      
+      const currentMonthExpenses = expensesData.filter(expense => 
+        expense.data >= monthStart && expense.data <= monthEnd
+      );
+      
+      setExpenses(currentMonthExpenses);
       setLoading(false);
     });
 
@@ -193,22 +219,53 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
             
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-600 mb-6">
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-2 font-medium">Gastos Fixos Mensais</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{predictedExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-            </div>
-
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Próximos gastos fixos:</p>
-              <div className="space-y-2">
-                {recurringExpenses.map((re: any) => (
-                  <div key={re.id} className="flex items-center justify-between text-sm py-2 border-b border-blue-100 dark:border-blue-900/30 last:border-0">
-                    <span className="text-gray-700 dark:text-gray-300">{re.nome} - Dia {re.diaDoMes}</span>
-                    <span className="font-semibold text-gray-900 dark:text-white">{re.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-2 font-medium">Gastos Fixos Mensais</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">{predictedMonthlyExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{monthlyRecurringExpenses.length} gasto(s)</p>
+              </div>
+              
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-2 font-medium">Gastos Fixos Anuais</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">{predictedAnnualExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{annualRecurringExpenses.length} gasto(s)</p>
               </div>
             </div>
+
+            {monthlyRecurringExpenses.length > 0 && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Próximos gastos fixos mensais:</p>
+                <div className="space-y-2">
+                  {monthlyRecurringExpenses.map((re: any) => (
+                    <div key={re.id} className="flex items-center justify-between text-sm py-2 border-b border-blue-100 dark:border-blue-900/30 last:border-0">
+                      <div className="flex-1">
+                        <span className="text-gray-700 dark:text-gray-300">{re.nome} - Dia {re.diaDoMes}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">({re.tipo})</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-white">{re.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {annualRecurringExpenses.length > 0 && (
+              <div className="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-200 dark:border-purple-800">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Próximos gastos fixos anuais:</p>
+                <div className="space-y-2">
+                  {annualRecurringExpenses.map((re: any) => (
+                    <div key={re.id} className="flex items-center justify-between text-sm py-2 border-b border-purple-100 dark:border-purple-900/30 last:border-0">
+                      <div className="flex-1">
+                        <span className="text-gray-700 dark:text-gray-300">{re.nome} - Dia {re.diaDoMes}/{re.mesDoAno || 1}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">({re.tipo})</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-white">{re.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

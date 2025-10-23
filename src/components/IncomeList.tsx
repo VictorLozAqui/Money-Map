@@ -13,7 +13,7 @@ import { db } from '../services/firebase';
 import { Income } from '../types';
 import toast from 'react-hot-toast';
 import { Trash2, Calendar, Edit } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import IncomeEditModal from './IncomeEditModal';
 
@@ -44,7 +44,16 @@ const IncomeList: React.FC = () => {
         createdAt: doc.data().createdAt.toDate()
       })) as Income[];
       
-      setIncomes(incomesData);
+      // Filtrar apenas rendimentos do mês atual
+      const now = new Date();
+      const monthStart = startOfMonth(now);
+      const monthEnd = endOfMonth(now);
+      
+      const currentMonthIncomes = incomesData.filter(income => 
+        income.data >= monthStart && income.data <= monthEnd
+      );
+      
+      setIncomes(currentMonthIncomes);
       setLoading(false);
     });
 

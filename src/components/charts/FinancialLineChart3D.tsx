@@ -40,24 +40,23 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
     
     return () => observer.disconnect();
   }, []);
-  // Encontra o último dia com transação
-  const allDates = [
-    ...incomes.map(i => i.data),
-    ...expenses.map(e => e.data)
+  // Filtra apenas transações passadas e do mês atual
+  const now = new Date();
+  const start = startOfMonth(now);
+  const end = endOfMonth(now);
+  
+  const currentMonthTransactions = [
+    ...incomes.filter(i => i.data <= end),
+    ...expenses.filter(e => e.data <= end)
   ];
   
-  if (allDates.length === 0) {
+  if (currentMonthTransactions.length === 0) {
     return (
       <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">
         Nenhum dado disponível
       </div>
     );
   }
-
-  const lastTransactionDate = new Date(Math.max(...allDates.map(d => d.getTime())));
-  const now = new Date();
-  const start = startOfMonth(now);
-  const end = lastTransactionDate > now ? lastTransactionDate : now;
   
   const days = eachDayOfInterval({ start, end });
 
@@ -65,12 +64,13 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
     const dayStr = format(day, 'yyyy-MM-dd');
     
     // Soma acumulada até este dia (evolução crescente)
+    // Mas filtra apenas transações até o dia atual (ignora futuras)
     const dayIncomes = incomes
-      .filter(i => format(i.data, 'yyyy-MM-dd') <= dayStr)
+      .filter(i => format(i.data, 'yyyy-MM-dd') <= dayStr && i.data <= now)
       .reduce((sum, i) => sum + i.valor, 0);
     
     const dayExpenses = expenses
-      .filter(e => format(e.data, 'yyyy-MM-dd') <= dayStr)
+      .filter(e => format(e.data, 'yyyy-MM-dd') <= dayStr && e.data <= now)
       .reduce((sum, e) => sum + e.valor, 0);
 
     return {
