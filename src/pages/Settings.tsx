@@ -5,7 +5,7 @@ import { useCategories } from '../contexts/CategoryContext';
 import { doc, setDoc, getDoc, collection, query, where, onSnapshot, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { Settings as SettingsIcon, Bell, Tag, Plus, Trash2, Save, Repeat, Edit2 } from 'lucide-react';
-import { RecurringExpense } from '../types';
+import { RecurringExpense, RecurringIncome } from '../types';
 import toast from 'react-hot-toast';
 
 interface NotificationSettings {
@@ -29,6 +29,8 @@ const Settings: React.FC = () => {
   const [newCategory, setNewCategory] = useState('');
   const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [editingRecurring, setEditingRecurring] = useState<RecurringExpense | null>(null);
+  const [recurringIncomes, setRecurringIncomes] = useState<RecurringIncome[]>([]);
+  const [editingRecurringIncome, setEditingRecurringIncome] = useState<RecurringIncome | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,6 +80,31 @@ const Settings: React.FC = () => {
     return () => unsubscribe();
   }, [family]);
 
+  // Carregar rendimentos recorrentes
+  useEffect(() => {
+    if (!family) {
+      setRecurringIncomes([]);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'recurringIncomes'),
+      where('familyId', '==', family.id),
+      where('active', '==', true)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const recurring = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+      })) as RecurringIncome[];
+      setRecurringIncomes(recurring);
+    });
+
+    return () => unsubscribe();
+  }, [family]);
+
   const handleSaveNotifications = async () => {
     if (!family) return;
 
@@ -119,19 +146,60 @@ const Settings: React.FC = () => {
 
   const handleUpdateRecurring = async (recurring: RecurringExpense) => {
     try {
-      await updateDoc(doc(db, 'recurringExpenses', recurring.id), {
+      const updateData: any = {
         nome: recurring.nome,
         valor: recurring.valor,
         tipo: recurring.tipo,
         diaDoMes: recurring.diaDoMes,
-        mesDoAno: recurring.mesDoAno,
-        frequencia: recurring.frequencia
-      });
+        frequencia: recurring.frequencia || 'mensal' // Default para mensal se não definido
+      };
+
+      // Só adiciona mesDoAno se for anual
+      if (recurring.frequencia === 'anual' && recurring.mesDoAno) {
+        updateData.mesDoAno = recurring.mesDoAno;
+      }
+
+      await updateDoc(doc(db, 'recurringExpenses', recurring.id), updateData);
       toast.success('Gasto fixo atualizado!');
       setEditingRecurring(null);
     } catch (error) {
       console.error(error);
       toast.error('Erro ao atualizar gasto fixo');
+    }
+  };
+
+  const handleDeleteRecurringIncome = async (id: string) => {
+    try {
+      await updateDoc(doc(db, 'recurringIncomes', id), {
+        active: false
+      });
+      toast.success('Rendimento fixo removido!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao remover rendimento fixo');
+    }
+  };
+
+  const handleUpdateRecurringIncome = async (recurring: RecurringIncome) => {
+    try {
+      const updateData: any = {
+        nome: recurring.nome,
+        valor: recurring.valor,
+        diaDoMes: recurring.diaDoMes,
+        frequencia: recurring.frequencia || 'mensal' // Default para mensal se não definido
+      };
+
+      // Só adiciona mesDoAno se for anual
+      if (recurring.frequencia === 'anual' && recurring.mesDoAno) {
+        updateData.mesDoAno = recurring.mesDoAno;
+      }
+
+      await updateDoc(doc(db, 'recurringIncomes', recurring.id), updateData);
+      toast.success('Rendimento fixo atualizado!');
+      setEditingRecurringIncome(null);
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao atualizar rendimento fixo');
     }
   };
 
@@ -369,7 +437,10 @@ const Settings: React.FC = () => {
                   
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setEditingRecurring(recurring)}
+                      onClick={() => setEditingRecurring({
+                        ...recurring,
+                        frequencia: recurring.frequencia || 'mensal'
+                      })}
                       className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                       title="Editar gasto fixo"
                     >
@@ -388,7 +459,7 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          {/* Modal de Edição */}
+          {/* Modal de Edição de Gasto Fixo */}
           {editingRecurring && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
@@ -492,6 +563,165 @@ const Settings: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setEditingRecurring(null)}
+                      className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Rendimentos Fixos */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+          <div className="flex items-center gap-2 mb-6">
+            <Repeat className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Rendimentos Fixos</h2>
+          </div>
+
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            Rendimentos que se repetem automaticamente (mensalmente ou anualmente). Adicione um rendimento fixo ao criar um novo rendimento e marcando a opção "Rendimento Fixo".
+          </p>
+
+          {recurringIncomes.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              Nenhum rendimento fixo registrado
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recurringIncomes.map(recurring => (
+                <div
+                  key={recurring.id}
+                  className="flex items-center justify-between px-5 py-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h4 className="text-gray-900 dark:text-white font-semibold">{recurring.nome}</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {recurring.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} • {
+                        recurring.frequencia === 'anual' 
+                          ? `Anual - Todo dia ${recurring.diaDoMes}/${recurring.mesDoAno || 1}`
+                          : `Mensal - Todo dia ${recurring.diaDoMes}`
+                      }
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setEditingRecurringIncome({
+                        ...recurring,
+                        frequencia: recurring.frequencia || 'mensal'
+                      })}
+                      className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                      title="Editar rendimento fixo"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteRecurringIncome(recurring.id)}
+                      className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      title="Remover rendimento fixo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Modal de Edição de Rendimento Fixo */}
+          {editingRecurringIncome && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Editar Rendimento Fixo
+                </h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      Nome
+                    </label>
+                    <input
+                      type="text"
+                      value={editingRecurringIncome.nome}
+                      onChange={(e) => setEditingRecurringIncome({ ...editingRecurringIncome, nome: e.target.value })}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      Valor
+                    </label>
+                    <input
+                      type="number"
+                      value={editingRecurringIncome.valor}
+                      onChange={(e) => setEditingRecurringIncome({ ...editingRecurringIncome, valor: Number(e.target.value) })}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      Frequência
+                    </label>
+                    <select
+                      value={editingRecurringIncome.frequencia}
+                      onChange={(e) => setEditingRecurringIncome({ 
+                        ...editingRecurringIncome, 
+                        frequencia: e.target.value as 'mensal' | 'anual' 
+                      })}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none"
+                    >
+                      <option value="mensal">Mensal</option>
+                      <option value="anual">Anual</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                      Dia do Mês (1-31)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={editingRecurringIncome.diaDoMes}
+                      onChange={(e) => setEditingRecurringIncome({ ...editingRecurringIncome, diaDoMes: Number(e.target.value) })}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none"
+                    />
+                  </div>
+
+                  {editingRecurringIncome.frequencia === 'anual' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                        Mês do Ano (1-12)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="12"
+                        value={editingRecurringIncome.mesDoAno || 1}
+                        onChange={(e) => setEditingRecurringIncome({ ...editingRecurringIncome, mesDoAno: Number(e.target.value) })}
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white outline-none"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={() => handleUpdateRecurringIncome(editingRecurringIncome)}
+                      className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-semibold"
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      onClick={() => setEditingRecurringIncome(null)}
                       className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold"
                     >
                       Cancelar
