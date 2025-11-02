@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -10,8 +10,15 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [nome, setNome] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, signup, resetPassword } = useAuth();
+  const { login, signup, resetPassword, currentUser } = useAuth();
   const navigate = useNavigate();
+
+  // Redireciona se o usuário já estiver logado
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/');
+    }
+  }, [currentUser, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +28,7 @@ const Login: React.FC = () => {
       if (isLogin) {
         await login(email, password);
         toast.success('Login realizado com sucesso!');
-        navigate('/dashboard');
+        navigate('/');
       } else {
         if (!nome.trim()) {
           toast.error('Por favor, preencha seu nome');
@@ -29,7 +36,7 @@ const Login: React.FC = () => {
         }
         await signup(email, password, nome);
         toast.success('Conta criada com sucesso!');
-        navigate('/dashboard');
+        navigate('/');
       }
     } catch (error: any) {
       console.error(error);

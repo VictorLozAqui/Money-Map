@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getAnalytics } from 'firebase/analytics';
 
@@ -24,8 +24,14 @@ if (typeof window !== 'undefined') {
   analytics = getAnalytics(app);
 }
 
-// Exporta os serviços
+// Inicializa o Auth e configura persistência local
 export const auth = getAuth(app);
+
+// Configura a persistência para manter o usuário logado
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+  console.error('Erro ao configurar persistência:', error);
+});
+
 export const db = getFirestore(app);
 export { analytics };
 export default app;
