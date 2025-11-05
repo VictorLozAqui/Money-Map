@@ -38,8 +38,9 @@ export interface SavingsGoal {
   id: string;
   familyId: string;
   valor: number;
-  mes: number;
-  ano: number;
+  mes?: number; // Opcional para compatibilidade com dados antigos
+  ano?: number; // Opcional para compatibilidade com dados antigos
+  active: boolean; // Se a meta está ativa (permanece até ser desativada ou substituída)
   createdBy: string;
   createdAt: Date;
 }

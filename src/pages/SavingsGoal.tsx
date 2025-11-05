@@ -11,7 +11,9 @@ import {
   doc,
   updateDoc,
   Timestamp,
-  onSnapshot
+  onSnapshot,
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { SavingsGoal, Income, Expense } from '../types';
@@ -29,18 +31,100 @@ const SavingsGoalPage: React.FC = () => {
   const [monthIncomes, setMonthIncomes] = useState(0);
   const [monthExpenses, setMonthExpenses] = useState(0);
 
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
-
-  // Carregar meta do mês atual
+  // Carregar meta ativa mais recente (com migração automática de metas antigas)
   useEffect(() => {
     if (!family) return;
 
+    const loadAndMigrateGoal = async () => {
+      // Primeiro, tenta buscar meta ativa
+      const activeQuery = query(
+        collection(db, 'savingsGoals'),
+        where('familyId', '==', family.id),
+        where('active', '==', true),
+        orderBy('createdAt', 'desc'),
+        limit(1)
+      );
+
+      const activeSnapshot = await getDocs(activeQuery);
+      
+      if (!activeSnapshot.empty) {
+        // Meta ativa encontrada
+        const goalData = {
+          id: activeSnapshot.docs[0].id,
+          ...activeSnapshot.docs[0].data(),
+          createdAt: activeSnapshot.docs[0].data().createdAt.toDate()
+        } as SavingsGoal;
+        setCurrentGoal(goalData);
+        return;
+      }
+
+      // Se não encontrou meta ativa, busca meta do mês atual (compatibilidade com dados antigos)
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      
+      const legacyQuery = query(
+        collection(db, 'savingsGoals'),
+        where('familyId', '==', family.id),
+        where('mes', '==', currentMonth),
+        where('ano', '==', currentYear)
+      );
+
+      const legacySnapshot = await getDocs(legacyQuery);
+      
+      if (!legacySnapshot.empty) {
+        // Encontrou meta antiga - pega a mais recente e migra automaticamente
+        const sortedDocs = legacySnapshot.docs.sort((a, b) => {
+          const aTime = a.data().createdAt?.toDate?.()?.getTime() || 0;
+          const bTime = b.data().createdAt?.toDate?.()?.getTime() || 0;
+          return bTime - aTime; // Mais recente primeiro
+        });
+        const legacyGoal = sortedDocs[0];
+        const goalData = {
+          id: legacyGoal.id,
+          ...legacyGoal.data(),
+          createdAt: legacyGoal.data().createdAt.toDate()
+        } as SavingsGoal;
+
+        // Desativa todas as outras metas da família
+        const allGoalsQuery = query(
+          collection(db, 'savingsGoals'),
+          where('familyId', '==', family.id)
+        );
+        const allGoalsSnapshot = await getDocs(allGoalsQuery);
+        
+        const updatePromises = allGoalsSnapshot.docs.map(docRef => {
+          if (docRef.id === legacyGoal.id) {
+            // Ativa a meta atual (migra para o novo formato)
+            return updateDoc(doc(db, 'savingsGoals', legacyGoal.id), { 
+              active: true 
+            });
+          } else {
+            // Desativa outras metas
+            return updateDoc(doc(db, 'savingsGoals', docRef.id), { 
+              active: false 
+            });
+          }
+        });
+
+        await Promise.all(updatePromises);
+        
+        setCurrentGoal({ ...goalData, active: true });
+        return;
+      }
+
+      // Não encontrou nenhuma meta
+      setCurrentGoal(null);
+    };
+
+    loadAndMigrateGoal();
+
+    // Configurar listener para mudanças em tempo real após migração inicial
     const q = query(
       collection(db, 'savingsGoals'),
       where('familyId', '==', family.id),
-      where('mes', '==', currentMonth),
-      where('ano', '==', currentYear)
+      where('active', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(1)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -57,7 +141,7 @@ const SavingsGoalPage: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [family, currentMonth, currentYear]);
+  }, [family]);
 
   // Carregar rendimentos e gastos do mês
   useEffect(() => {
@@ -121,11 +205,25 @@ const SavingsGoalPage: React.FC = () => {
 
     setLoading(true);
     try {
+      // Desativar todas as metas anteriores da família
+      const existingGoalsQuery = query(
+        collection(db, 'savingsGoals'),
+        where('familyId', '==', family.id),
+        where('active', '==', true)
+      );
+      
+      const existingGoalsSnapshot = await getDocs(existingGoalsQuery);
+      const updatePromises = existingGoalsSnapshot.docs.map(docRef =>
+        updateDoc(doc(db, 'savingsGoals', docRef.id), { active: false })
+      );
+      
+      await Promise.all(updatePromises);
+
+      // Criar nova meta ativa
       await addDoc(collection(db, 'savingsGoals'), {
         familyId: family.id,
         valor: valor,
-        mes: currentMonth,
-        ano: currentYear,
+        active: true,
         createdBy: currentUser.uid,
         createdAt: Timestamp.now()
       });
@@ -236,7 +334,7 @@ const SavingsGoalPage: React.FC = () => {
                 Defina sua meta de poupança
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Estabeleça uma meta mensal para economizar e acompanhe seu progresso
+                Estabeleça uma meta de poupança que permanecerá ativa até ser atualizada
               </p>
               <button
                 onClick={() => setEditing(true)}
@@ -248,7 +346,7 @@ const SavingsGoalPage: React.FC = () => {
           ) : editing ? (
             <form onSubmit={currentGoal ? handleUpdateGoal : handleCreateGoal} className="max-w-md mx-auto">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                {currentGoal ? 'Editar Meta' : 'Nova Meta'} - {monthName}
+                {currentGoal ? 'Editar Meta' : 'Nova Meta'}
               </h2>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
@@ -288,7 +386,7 @@ const SavingsGoalPage: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Meta de {monthName}
+                  Meta de Poupança
                 </h2>
                 <button
                   onClick={() => {
