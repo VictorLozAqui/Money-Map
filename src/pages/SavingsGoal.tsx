@@ -36,111 +36,138 @@ const SavingsGoalPage: React.FC = () => {
     if (!family) return;
 
     const loadAndMigrateGoal = async () => {
-      // Primeiro, tenta buscar meta ativa
-      const activeQuery = query(
-        collection(db, 'savingsGoals'),
-        where('familyId', '==', family.id),
-        where('active', '==', true),
-        orderBy('createdAt', 'desc'),
-        limit(1)
-      );
+      try {
+        // Primeiro, tenta buscar meta ativa
+        try {
+          const activeQuery = query(
+            collection(db, 'savingsGoals'),
+            where('familyId', '==', family.id),
+            where('active', '==', true),
+            orderBy('createdAt', 'desc'),
+            limit(1)
+          );
 
-      const activeSnapshot = await getDocs(activeQuery);
-      
-      if (!activeSnapshot.empty) {
-        // Meta ativa encontrada
-        const goalData = {
-          id: activeSnapshot.docs[0].id,
-          ...activeSnapshot.docs[0].data(),
-          createdAt: activeSnapshot.docs[0].data().createdAt.toDate()
-        } as SavingsGoal;
-        setCurrentGoal(goalData);
-        return;
-      }
+          const activeSnapshot = await getDocs(activeQuery);
+          
+          if (!activeSnapshot.empty) {
+            // Meta ativa encontrada
+            const goalData = {
+              id: activeSnapshot.docs[0].id,
+              ...activeSnapshot.docs[0].data(),
+              createdAt: activeSnapshot.docs[0].data().createdAt.toDate()
+            } as SavingsGoal;
+            setCurrentGoal(goalData);
+            return;
+          }
+        } catch (error: any) {
+          // Se falhar por falta de índice ou outro erro, continua para fallback
+          console.log('Query de meta ativa falhou, tentando fallback:', error.message);
+        }
 
-      // Se não encontrou meta ativa, busca meta do mês atual (compatibilidade com dados antigos)
-      const currentMonth = new Date().getMonth() + 1;
-      const currentYear = new Date().getFullYear();
-      
-      const legacyQuery = query(
-        collection(db, 'savingsGoals'),
-        where('familyId', '==', family.id),
-        where('mes', '==', currentMonth),
-        where('ano', '==', currentYear)
-      );
-
-      const legacySnapshot = await getDocs(legacyQuery);
-      
-      if (!legacySnapshot.empty) {
-        // Encontrou meta antiga - pega a mais recente e migra automaticamente
-        const sortedDocs = legacySnapshot.docs.sort((a, b) => {
-          const aTime = a.data().createdAt?.toDate?.()?.getTime() || 0;
-          const bTime = b.data().createdAt?.toDate?.()?.getTime() || 0;
-          return bTime - aTime; // Mais recente primeiro
-        });
-        const legacyGoal = sortedDocs[0];
-        const goalData = {
-          id: legacyGoal.id,
-          ...legacyGoal.data(),
-          createdAt: legacyGoal.data().createdAt.toDate()
-        } as SavingsGoal;
-
-        // Desativa todas as outras metas da família
+        // Fallback: busca todas as metas da família e pega a mais recente
         const allGoalsQuery = query(
           collection(db, 'savingsGoals'),
           where('familyId', '==', family.id)
         );
+
         const allGoalsSnapshot = await getDocs(allGoalsQuery);
         
-        const updatePromises = allGoalsSnapshot.docs.map(docRef => {
-          if (docRef.id === legacyGoal.id) {
-            // Ativa a meta atual (migra para o novo formato)
-            return updateDoc(doc(db, 'savingsGoals', legacyGoal.id), { 
-              active: true 
-            });
-          } else {
-            // Desativa outras metas
-            return updateDoc(doc(db, 'savingsGoals', docRef.id), { 
-              active: false 
-            });
-          }
+        if (allGoalsSnapshot.empty) {
+          setCurrentGoal(null);
+          return;
+        }
+
+        // Ordena por data de criação (mais recente primeiro)
+        const sortedDocs = allGoalsSnapshot.docs.sort((a, b) => {
+          const aTime = a.data().createdAt?.toDate?.()?.getTime() || 0;
+          const bTime = b.data().createdAt?.toDate?.()?.getTime() || 0;
+          return bTime - aTime; // Mais recente primeiro
         });
 
-        await Promise.all(updatePromises);
-        
-        setCurrentGoal({ ...goalData, active: true });
-        return;
-      }
+        const mostRecentGoal = sortedDocs[0];
+        const goalData = mostRecentGoal.data();
 
-      // Não encontrou nenhuma meta
-      setCurrentGoal(null);
+        // Se a meta não tem o campo 'active', precisa migrar
+        if (!goalData.active) {
+          // Desativa todas as outras metas da família
+          const updatePromises = allGoalsSnapshot.docs.map(docRef => {
+            if (docRef.id === mostRecentGoal.id) {
+              // Ativa a meta mais recente (migra para o novo formato)
+              return updateDoc(doc(db, 'savingsGoals', mostRecentGoal.id), { 
+                active: true 
+              });
+            } else {
+              // Desativa outras metas
+              return updateDoc(doc(db, 'savingsGoals', docRef.id), { 
+                active: false 
+              });
+            }
+          });
+
+          await Promise.all(updatePromises);
+          
+          setCurrentGoal({
+            id: mostRecentGoal.id,
+            ...goalData,
+            createdAt: goalData.createdAt.toDate(),
+            active: true
+          } as SavingsGoal);
+        } else if (goalData.active) {
+          // Meta já tem active, apenas define
+          setCurrentGoal({
+            id: mostRecentGoal.id,
+            ...goalData,
+            createdAt: goalData.createdAt.toDate()
+          } as SavingsGoal);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar meta:', error);
+        setCurrentGoal(null);
+      }
     };
 
-    loadAndMigrateGoal();
+    let unsubscribe: (() => void) | null = null;
 
-    // Configurar listener para mudanças em tempo real após migração inicial
-    const q = query(
-      collection(db, 'savingsGoals'),
-      where('familyId', '==', family.id),
-      where('active', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(1)
-    );
+    loadAndMigrateGoal().then(() => {
+      // Configurar listener para mudanças em tempo real após migração inicial
+      try {
+        const q = query(
+          collection(db, 'savingsGoals'),
+          where('familyId', '==', family.id),
+          where('active', '==', true),
+          orderBy('createdAt', 'desc'),
+          limit(1)
+        );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const goalData = {
-          id: snapshot.docs[0].id,
-          ...snapshot.docs[0].data(),
-          createdAt: snapshot.docs[0].data().createdAt.toDate()
-        } as SavingsGoal;
-        setCurrentGoal(goalData);
-      } else {
-        setCurrentGoal(null);
+        unsubscribe = onSnapshot(q, 
+          (snapshot) => {
+            if (!snapshot.empty) {
+              const goalData = {
+                id: snapshot.docs[0].id,
+                ...snapshot.docs[0].data(),
+                createdAt: snapshot.docs[0].data().createdAt.toDate()
+              } as SavingsGoal;
+              setCurrentGoal(goalData);
+            }
+            // Se snapshot vazio, mantém o estado atual (não sobrescreve)
+          },
+          (error) => {
+            // Se houver erro no listener (ex: falta de índice), ignora silenciosamente
+            // A migração inicial já tentou carregar
+            console.log('Erro no listener de metas (ignorado):', error);
+          }
+        );
+      } catch (error) {
+        // Se não conseguir configurar o listener, ignora - já temos os dados da migração
+        console.log('Não foi possível configurar listener de metas:', error);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [family]);
 
   // Carregar rendimentos e gastos do mês
