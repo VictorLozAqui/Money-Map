@@ -97,13 +97,13 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white relative overflow-hidden flex items-center justify-center px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white relative overflow-hidden flex items-center justify-center px-4 sm:px-6 py-12">
       {/* Background accents */}
       <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-600/30 blur-3xl" />
       <div className="absolute -right-16 top-20 h-64 w-64 rounded-full bg-cyan-400/25 blur-3xl" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_25%),radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.06),transparent_20%)]" />
 
-      <div className="relative w-full max-w-4xl flex flex-col items-center gap-10">
+      <div className="relative w-full max-w-4xl flex flex-col items-center gap-8 sm:gap-10">
         {/* Pitch / hero */}
         <div className="space-y-6 text-center">
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur text-sm font-semibold text-cyan-200">
@@ -126,28 +126,25 @@ const Login: React.FC = () => {
 
         {/* Carousel de screenshots */}
         <div className="w-full relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md shadow-2xl">
-          <div
-            className="flex transition-transform duration-700 ease-in-out"
-            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-          >
-            {slides.map((item) => (
+          <div className="relative aspect-video w-full bg-slate-950/40 border-b border-white/10">
+            {slides.map((item, index) => (
               <div
                 key={item.alt}
-                className="min-w-full flex-shrink-0 flex flex-col bg-slate-950/40"
+                className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ${
+                  currentSlide === index ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
               >
-                <div className="flex items-center justify-center h-[360px] px-4">
-                  <img
-                    src={item.src}
-                    alt={item.alt}
-                    className="max-h-[320px] w-full object-contain border border-white/10 rounded-lg bg-slate-900/70 select-none"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="px-6 py-3 bg-slate-900/70 text-sm text-slate-100 border-t border-white/10">
-                  {item.alt}
-                </div>
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  className="max-h-full max-w-full object-contain border border-white/10 rounded-lg bg-slate-900/70 select-none"
+                  loading="lazy"
+                />
               </div>
             ))}
+          </div>
+          <div className="px-4 sm:px-6 py-3 bg-slate-900/70 text-sm text-slate-100 border-t border-white/10 flex items-center justify-center">
+            {slides[currentSlide]?.alt}
           </div>
           <button
             type="button"
