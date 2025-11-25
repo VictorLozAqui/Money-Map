@@ -117,10 +117,38 @@ const ExpensePieChart3D: React.FC<ExpensePieChartProps> = ({ expenses }) => {
     );
   };
 
+  const renderTooltip = ({ active, payload }: any) => {
+    if (!active || !payload || payload.length === 0) return null;
+
+    // Usa o ǻltimo item (pizza principal) para evitar duplicidade com a sombra
+    const item = payload[payload.length - 1];
+    const name = item?.payload?.name ?? '';
+    const value = item?.payload?.value ?? 0;
+
+    return (
+      <div
+        className="rounded-lg shadow-xl border border-black/5 dark:border-white/5"
+        style={{
+          backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+          padding: '12px 14px',
+          color: isDarkMode ? '#F9FAFB' : '#111827',
+          minWidth: '160px'
+        }}
+      >
+        <div className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-300">Categoria</div>
+        <div className="text-sm font-semibold mb-2 text-gray-900 dark:text-gray-100">{name}</div>
+        <div className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-300">Valor</div>
+        <div className="text-base font-bold text-gray-900 dark:text-gray-100">
+          {value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="relative flex flex-col gap-4" ref={containerRef}>
       <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-lg opacity-50 blur-xl translate-y-4 -z-10"></div>
-
+      
       <ResponsiveContainer width="100%" height={chartHeight}>
         <PieChart>
           <defs>
@@ -176,27 +204,9 @@ const ExpensePieChart3D: React.FC<ExpensePieChartProps> = ({ expenses }) => {
           </Pie>
 
           <Tooltip
-            contentStyle={{
-              backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-              border: 'none',
-              borderRadius: '8px',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-              padding: '12px 14px',
-              color: isDarkMode ? '#F9FAFB' : '#111827'
-            }}
-            itemStyle={{
-              color: isDarkMode ? '#E5E7EB' : '#111827',
-              fontWeight: 600
-            }}
-            labelStyle={{
-              color: isDarkMode ? '#F9FAFB' : '#111827',
-              fontWeight: 700,
-              marginBottom: 6
-            }}
-            formatter={(value: number) => [
-              value.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
-              'Valor'
-            ]}
+            content={renderTooltip}
+            wrapperStyle={{ outline: 'none' }}
+            cursor={{ stroke: '#9CA3AF', strokeOpacity: 0.25 }}
           />
         </PieChart>
       </ResponsiveContainer>
