@@ -151,6 +151,8 @@ const Dashboard: React.FC = () => {
   const totalIncomes = incomes.reduce((sum, inc) => sum + inc.valor, 0);
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.valor, 0);
   const balance = totalIncomes - totalExpenses;
+  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const currentYear = new Date().getFullYear();
 
   if (!family) {
     return (
@@ -235,13 +237,20 @@ const Dashboard: React.FC = () => {
 
             {monthlyRecurringExpenses.length > 0 && (
               <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Próximos gastos fixos mensais:</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Seus gastos fixos mensais:</p>
                 <div className="space-y-2">
                   {monthlyRecurringExpenses.map((re: any) => (
                     <div key={re.id} className="flex items-center justify-between text-sm py-2 border-b border-blue-100 dark:border-blue-900/30 last:border-0">
                       <div className="flex-1">
-                        <span className="text-gray-700 dark:text-gray-300">{re.nome} - Dia {re.diaDoMes}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">({re.tipo})</span>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="text-gray-700 dark:text-gray-300">{re.nome} - Dia {re.diaDoMes}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">({re.tipo})</span>
+                          {re.lastProcessedMonth === currentMonthKey && (
+                            <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-200 text-[11px] font-semibold">
+                              lançado
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span className="font-semibold text-gray-900 dark:text-white">{re.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                     </div>
@@ -252,13 +261,20 @@ const Dashboard: React.FC = () => {
 
             {annualRecurringExpenses.length > 0 && (
               <div className="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-200 dark:border-purple-800">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Próximos gastos fixos anuais:</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Seus gastos fixos anuais:</p>
                 <div className="space-y-2">
                   {annualRecurringExpenses.map((re: any) => (
                     <div key={re.id} className="flex items-center justify-between text-sm py-2 border-b border-purple-100 dark:border-purple-900/30 last:border-0">
                       <div className="flex-1">
-                        <span className="text-gray-700 dark:text-gray-300">{re.nome} - Dia {re.diaDoMes}/{re.mesDoAno || 1}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">({re.tipo})</span>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="text-gray-700 dark:text-gray-300">{re.nome} - Dia {re.diaDoMes}/{re.mesDoAno || 1}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">({re.tipo})</span>
+                          {re.lastProcessedYear === currentYear && (
+                            <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-200 text-[11px] font-semibold">
+                              lançado
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span className="font-semibold text-gray-900 dark:text-white">{re.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                     </div>
