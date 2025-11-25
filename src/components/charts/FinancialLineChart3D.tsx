@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -22,53 +21,69 @@ interface FinancialLineChart3DProps {
 
 const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, expenses }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Detecta o modo escuro inicial
     const checkDarkMode = () => {
       setIsDarkMode(document.documentElement.classList.contains('dark'));
     };
-    
+
     checkDarkMode();
-    
-    // Observer para detectar mudanças no modo
+
     const observer = new MutationObserver(checkDarkMode);
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['class']
     });
-    
+
     return () => observer.disconnect();
   }, []);
-  // Filtra apenas transações passadas e do mês atual
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    setContainerWidth(containerRef.current.clientWidth);
+
+    if (typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (width) {
+        setContainerWidth(width);
+      }
+    });
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   const now = new Date();
   const start = startOfMonth(now);
   const end = endOfMonth(now);
-  
+
   const currentMonthTransactions = [
     ...incomes.filter(i => i.data <= end),
     ...expenses.filter(e => e.data <= end)
   ];
-  
+
   if (currentMonthTransactions.length === 0) {
     return (
       <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">
-        Nenhum dado disponível
+        Nenhum dado disponivel
       </div>
     );
   }
-  
+
   const days = eachDayOfInterval({ start, end });
 
   const data = days.map(day => {
     const dayStr = format(day, 'yyyy-MM-dd');
-    
-    // Soma acumulada até este dia (evolução crescente)
-    // Mas filtra apenas transações até o dia atual (ignora futuras)
+
     const dayIncomes = incomes
       .filter(i => format(i.data, 'yyyy-MM-dd') <= dayStr && i.data <= now)
       .reduce((sum, i) => sum + i.valor, 0);
-    
+
     const dayExpenses = expenses
       .filter(e => format(e.data, 'yyyy-MM-dd') <= dayStr && e.data <= now)
       .reduce((sum, e) => sum + e.valor, 0);
@@ -84,20 +99,31 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
   if (data.length === 0) {
     return (
       <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">
-        Nenhum dado disponível
+        Nenhum dado disponivel
       </div>
     );
   }
 
+  const isCompact = containerWidth < 720;
+  const isTight = containerWidth < 520;
+  const chartHeight = isTight ? 260 : isCompact ? 320 : 400;
+  const tickFontSize = isTight ? 10 : 12;
+  const dotRadius = isTight ? 3 : 4;
+  const activeDotRadius = isTight ? 5 : 6;
+
   return (
-    <div className="relative">
-      {/* Sombra de fundo para efeito 3D */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg opacity-30 blur-xl transform translate-y-4"></div>
+    <div className="relative" ref={containerRef}>
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg opacity-30 blur-xl translate-y-4"></div>
       
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
         <ComposedChart
           data={data}
-          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+          margin={{
+            top: isTight ? 14 : 20,
+            right: isCompact ? 18 : 30,
+            left: isCompact ? 12 : 20,
+            bottom: isCompact ? 14 : 20
+          }}
         >
           <defs>
             <linearGradient id="colorRendimentos" x1="0" y1="0" x2="0" y2="1">
@@ -126,14 +152,14 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
           <XAxis
             dataKey="date"
             stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
-            style={{ fontSize: '12px', fontWeight: '500' }}
-            tick={{ fill: isDarkMode ? '#D1D5DB' : '#6B7280' }}
+            style={{ fontSize: `${tickFontSize}px`, fontWeight: '600' }}
+            tick={{ fill: isDarkMode ? '#D1D5DB' : '#4B5563' }}
           />
           
           <YAxis
             stroke={isDarkMode ? '#9CA3AF' : '#6B7280'}
-            style={{ fontSize: '12px', fontWeight: '500' }}
-            tick={{ fill: isDarkMode ? '#D1D5DB' : '#6B7280' }}
+            style={{ fontSize: `${tickFontSize}px`, fontWeight: '600' }}
+            tick={{ fill: isDarkMode ? '#D1D5DB' : '#4B5563' }}
             tickFormatter={(value) =>
               value.toLocaleString('pt-BR', {
                 minimumFractionDigits: 0,
@@ -155,21 +181,24 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
               value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
             }
             labelStyle={{ 
-              fontWeight: '600', 
+              fontWeight: '700', 
               marginBottom: '8px',
               color: isDarkMode ? '#F3F4F6' : '#1F2937'
+            }}
+            itemStyle={{
+              color: isDarkMode ? '#E5E7EB' : '#111827',
+              fontWeight: 600
             }}
           />
           
           <Legend
             wrapperStyle={{
-              paddingTop: '20px',
-              fontSize: '14px',
+              paddingTop: isCompact ? '10px' : '20px',
+              fontSize: isTight ? '12px' : '14px',
               fontWeight: '500'
             }}
           />
           
-          {/* Áreas de preenchimento para efeito 3D */}
           <Area
             type="monotone"
             dataKey="rendimentos"
@@ -186,14 +215,13 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
             legendType="none"
           />
           
-          {/* Linhas principais com sombra */}
           <Line
             type="monotone"
             dataKey="rendimentos"
             stroke="#10B981"
             strokeWidth={3}
-            dot={{ fill: '#10B981', r: 4, strokeWidth: 2, stroke: '#fff' }}
-            activeDot={{ r: 6, stroke: '#10B981', strokeWidth: 3 }}
+            dot={{ fill: '#10B981', r: dotRadius, strokeWidth: 2, stroke: '#fff' }}
+            activeDot={{ r: activeDotRadius, stroke: '#10B981', strokeWidth: 3 }}
             filter="url(#lineShadow)"
           />
           
@@ -202,8 +230,8 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
             dataKey="gastos"
             stroke="#EF4444"
             strokeWidth={3}
-            dot={{ fill: '#EF4444', r: 4, strokeWidth: 2, stroke: '#fff' }}
-            activeDot={{ r: 6, stroke: '#EF4444', strokeWidth: 3 }}
+            dot={{ fill: '#EF4444', r: dotRadius, strokeWidth: 2, stroke: '#fff' }}
+            activeDot={{ r: activeDotRadius, stroke: '#EF4444', strokeWidth: 3 }}
             filter="url(#lineShadow)"
           />
           
@@ -213,8 +241,8 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
             stroke="#3B82F6"
             strokeWidth={3}
             strokeDasharray="5 5"
-            dot={{ fill: '#3B82F6', r: 4, strokeWidth: 2, stroke: '#fff' }}
-            activeDot={{ r: 6, stroke: '#3B82F6', strokeWidth: 3 }}
+            dot={{ fill: '#3B82F6', r: dotRadius, strokeWidth: 2, stroke: '#fff' }}
+            activeDot={{ r: activeDotRadius, stroke: '#3B82F6', strokeWidth: 3 }}
             filter="url(#lineShadow)"
           />
         </ComposedChart>
@@ -224,4 +252,3 @@ const FinancialLineChart3D: React.FC<FinancialLineChart3DProps> = ({ incomes, ex
 };
 
 export default FinancialLineChart3D;
-
