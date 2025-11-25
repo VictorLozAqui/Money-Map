@@ -3,12 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
+const slides = [
+  { src: '/Dash.png', alt: 'Dashboard' },
+  { src: '/rendi.png', alt: 'Rendimentos' },
+  { src: '/gast.png', alt: 'Gastos' },
+  { src: '/meta.png', alt: 'Meta de Poupança' },
+  { src: '/rela.png', alt: 'Relatórios' },
+  { src: '/config.png', alt: 'Configurações' },
+  { src: '/fami.png', alt: 'Família' },
+  { src: '/perfi.png', alt: 'Perfil' }
+];
+
 const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nome, setNome] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const { login, signup, resetPassword, currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -17,6 +29,13 @@ const Login: React.FC = () => {
       navigate('/');
     }
   }, [currentUser, navigate]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(id);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +89,13 @@ const Login: React.FC = () => {
     }
   };
 
+  const goToSlide = (direction: 'next' | 'prev') => {
+    setCurrentSlide((prev) => {
+      if (direction === 'next') return (prev + 1) % slides.length;
+      return (prev - 1 + slides.length) % slides.length;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white relative overflow-hidden flex items-center justify-center px-6 py-12">
       {/* Background accents */}
@@ -77,7 +103,7 @@ const Login: React.FC = () => {
       <div className="absolute -right-16 top-20 h-64 w-64 rounded-full bg-cyan-400/25 blur-3xl" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_25%),radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.06),transparent_20%)]" />
 
-      <div className="relative w-full max-w-3xl flex flex-col items-center gap-10">
+      <div className="relative w-full max-w-4xl flex flex-col items-center gap-10">
         {/* Pitch / hero */}
         <div className="space-y-6 text-center">
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur text-sm font-semibold text-cyan-200">
@@ -96,6 +122,49 @@ const Login: React.FC = () => {
             <span className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-slate-200">Gráficos claros</span>
             <span className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-slate-200">Metas de poupança</span>
           </div>
+        </div>
+
+        {/* Carousel de screenshots */}
+        <div className="w-full relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md shadow-2xl">
+          <div
+            className="flex transition-transform duration-700 ease-in-out"
+            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+          >
+            {slides.map((item) => (
+              <div
+                key={item.alt}
+                className="min-w-full flex-shrink-0 flex flex-col bg-slate-950/40"
+              >
+                <div className="flex items-center justify-center h-[360px] px-4">
+                  <img
+                    src={item.src}
+                    alt={item.alt}
+                    className="max-h-[320px] w-full object-contain border border-white/10 rounded-lg bg-slate-900/70 select-none"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="px-6 py-3 bg-slate-900/70 text-sm text-slate-100 border-t border-white/10">
+                  {item.alt}
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => goToSlide('prev')}
+            className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-slate-900/70 border border-white/15 p-2 text-white hover:bg-slate-800/80 transition-colors"
+            aria-label="Anterior"
+          >
+            {'<'}
+          </button>
+          <button
+            type="button"
+            onClick={() => goToSlide('next')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-slate-900/70 border border-white/15 p-2 text-white hover:bg-slate-800/80 transition-colors"
+            aria-label="Próximo"
+          >
+            {'>'}
+          </button>
         </div>
 
         {/* Form */}
