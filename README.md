@@ -8,39 +8,38 @@ Aplicação web para controle financeiro colaborativo entre membros de uma famí
 - Vite
 - Tailwind CSS
 - Firebase (Authentication + Firestore)
-- Charts-2 (Gráficos)
+- Charts-2 (gráficos)
 - React Router DOM
 - React Hook Form + Zod
 - date-fns
 
 ## Funcionalidades
 
-- ✅ Autenticação com email e senha
-- ✅ Alterar senha do usuário
-- ✅ Criar núcleo familiar
-- ✅ Convidar membros via código familiar
-- ✅ Gerenciar rendimentos (adicionar, listar, excluir)
-- ✅ Gerenciar gastos com categorias (adicionar, listar, excluir)
-- ✅ Dashboard com métricas e gráficos
-- ✅ Gráfico de pizza: gastos por categoria
-- ✅ Gráfico de linhas: evolução financeira
-- ✅ Visualizar membros da família
-- ✅ Design responsivo
-
+- Autenticação com email e senha
+- Alterar senha do usuário
+- Criar núcleo familiar
+- Convidar membros via código familiar
+- Gerenciar rendimentos (adicionar, listar, excluir)
+- Gerenciar gastos com categorias (adicionar, listar, excluir)
+- Dashboard com métricas e gráficos
+- Gráfico de pizza: gastos por categoria
+- Gráfico de linhas: evolução financeira
+- Visualizar membros da família
+- Design responsivo
 
 ## Estrutura do Projeto
 
 ```
 src/
 ├── components/          # Componentes reutilizáveis
-│   ├── charts/         # Componentes de gráficos
+│   ├── charts/          # Componentes de gráficos
 │   ├── Layout.tsx
 │   ├── Header.tsx
 │   ├── Sidebar.tsx
 │   └── ...
-├── contexts/           # Contextos React (Auth, Family)
-├── hooks/             # Custom hooks
-├── pages/             # Páginas da aplicação
+├── contexts/            # Contextos React (Auth, Family)
+├── hooks/               # Custom hooks
+├── pages/               # Páginas da aplicação
 │   ├── Login.tsx
 │   ├── Dashboard.tsx
 │   ├── Incomes.tsx
@@ -48,10 +47,10 @@ src/
 │   ├── Family.tsx
 │   ├── Profile.tsx
 │   └── FamilySetup.tsx
-├── services/          # Serviços (Firebase)
-├── types/             # Tipos TypeScript
-├── App.tsx            # Componente principal
-└── main.tsx           # Entry point
+├── services/            # Serviços (Firebase)
+├── types/               # Tipos TypeScript
+├── App.tsx              # Componente principal
+└── main.tsx             # Entry point
 ```
 
 ## Fluxo de Uso
@@ -74,23 +73,31 @@ src/
    - Visualizar gráficos e relatórios no dashboard
    - Todos os membros da família podem adicionar e visualizar dados
 
-
-
 ## 🔒 Segurança
 
 Este projeto segue as boas práticas de segurança:
 
-- ✅ Credenciais em variáveis de ambiente (`.env`)
-- ✅ Arquivo `.env` não é commitado (protegido pelo `.gitignore`)
-- ✅ Regras de segurança do Firestore
-- ✅ Autenticação obrigatória
-- ✅ Acesso apenas aos dados da própria família
-- ✅ Validações client-side e server-side
+- Credenciais em variáveis de ambiente (`.env`)
+- Arquivo `.env` não é commitado (protegido pelo `.gitignore`)
+- Regras de segurança do Firestore
+- Autenticação obrigatória
+- Acesso apenas aos dados da própria família
+- Validações client-side e server-side
 
 Para mais detalhes, consulte o arquivo `SEGURANCA.md`.
 
+## 🤝 Contribuindo
+
+Contribuições são bem-vindas! Sinta-se à vontade para:
+
+1. Fazer fork do projeto
+2. Criar uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commitar suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abrir um Pull Request
 
 ## Licença
 
 MIT
 
+⭐ Se este projeto foi útil para ti, considera dar uma estrela! ⭐
