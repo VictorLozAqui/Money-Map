@@ -83,9 +83,9 @@ const Dashboard: React.FC = () => {
       const monthStart = startOfMonth(now);
       const monthEnd = endOfMonth(now);
       
-      const currentMonthIncomes = incomesData.filter(income => 
-        income.data >= monthStart && income.data <= monthEnd
-      );
+      const currentMonthIncomes = incomesData
+        .filter(income => income.data >= monthStart && income.data <= monthEnd)
+        .sort((a, b) => b.data.getTime() - a.data.getTime());
       
       setIncomes(currentMonthIncomes);
     });
@@ -109,9 +109,9 @@ const Dashboard: React.FC = () => {
       const monthStart = startOfMonth(now);
       const monthEnd = endOfMonth(now);
       
-      const currentMonthExpenses = expensesData.filter(expense => 
-        expense.data >= monthStart && expense.data <= monthEnd
-      );
+      const currentMonthExpenses = expensesData
+        .filter(expense => expense.data >= monthStart && expense.data <= monthEnd)
+        .sort((a, b) => b.data.getTime() - a.data.getTime());
       
       setExpenses(currentMonthExpenses);
       setLoading(false);
