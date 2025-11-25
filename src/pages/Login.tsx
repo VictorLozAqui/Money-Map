@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { Wallet } from 'lucide-react';
 
 const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,7 +12,6 @@ const Login: React.FC = () => {
   const { login, signup, resetPassword, currentUser } = useAuth();
   const navigate = useNavigate();
 
-  // Redireciona se o usuário já estiver logado
   useEffect(() => {
     if (currentUser) {
       navigate('/');
@@ -73,39 +71,66 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 w-full max-w-md overflow-hidden">
-        {/* Header */}
-        <div className="bg-blue-600 px-8 py-12 text-white text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-lg mb-4">
-            <Wallet className="w-8 h-8" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white relative overflow-hidden flex items-center justify-center px-6 py-12">
+      {/* Background accents */}
+      <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-600/30 blur-3xl" />
+      <div className="absolute -right-16 top-20 h-64 w-64 rounded-full bg-cyan-400/25 blur-3xl" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.06),transparent_25%),radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.06),transparent_20%)]" />
+
+      <div className="relative w-full max-w-3xl flex flex-col items-center gap-10">
+        {/* Pitch / hero */}
+        <div className="space-y-6 text-center">
+          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur text-sm font-semibold text-cyan-200">
+            Money Map
           </div>
-          <h1 className="text-2xl font-bold">Money Map</h1>
-          <p className="text-blue-100 mt-2">
-            {isLogin ? 'Entre na sua conta' : 'Crie sua conta'}
-          </p>
+          <div className="space-y-4">
+            <h1 className="text-3xl md:text-4xl font-bold leading-tight">
+              Descubra por onde anda seu dinheiro
+            </h1>
+            <p className="text-slate-200 text-lg leading-relaxed max-w-xl mx-auto">
+              Acompanhe seus gastos, renda e metas em um painel claro, com gráficos que ajudam a enxergar tendências e manter o controle do mês.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-3">
+            <span className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-slate-200">Controle de gastos</span>
+            <span className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-slate-200">Gráficos claros</span>
+            <span className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-slate-200">Metas de poupança</span>
+          </div>
         </div>
 
-        {/* Formulário */}
-        <div className="px-8 py-8">
-          {/* Tabs */}
-          <div className="flex gap-2 mb-8 bg-gray-100 p-1 rounded-lg">
+        {/* Form */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 shadow-2xl backdrop-blur-md w-full">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-cyan-200 font-semibold">
+                Money Map
+              </p>
+              <h2 className="text-2xl font-bold text-white mt-1">
+                {isLogin ? 'Entrar' : 'Criar conta'}
+              </h2>
+              <p className="text-slate-200 text-sm mt-2">
+                {isLogin ? 'Acompanhe gastos, renda e metas em um só lugar' : 'Comece a acompanhar suas finanças'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mb-8 bg-white/5 p-1 rounded-lg border border-white/10">
             <button
               onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2.5 px-4 rounded-md font-medium transition-colors ${
+              className={`flex-1 py-2.5 px-4 rounded-md font-medium transition-all ${
                 isLogin
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-slate-900 shadow-md'
+                  : 'text-slate-200 hover:text-white'
               }`}
             >
               Entrar
             </button>
             <button
               onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2.5 px-4 rounded-md font-medium transition-colors ${
+              className={`flex-1 py-2.5 px-4 rounded-md font-medium transition-all ${
                 !isLogin
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-slate-900 shadow-md'
+                  : 'text-slate-200 hover:text-white'
               }`}
             >
               Cadastrar
@@ -115,7 +140,7 @@ const Login: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && (
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-slate-100 mb-2">
                   Nome Completo
                 </label>
                 <input
@@ -123,14 +148,14 @@ const Login: React.FC = () => {
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   autoComplete="name"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 transition-colors outline-none"
-                  placeholder=""
+                  className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-slate-400 transition-colors outline-none"
+                  placeholder="Como quer ser chamado(a)?"
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
+              <label className="block text-sm font-medium text-slate-100 mb-2">
                 Email
               </label>
               <input
@@ -138,22 +163,22 @@ const Login: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 transition-colors outline-none"
-                placeholder=""
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-slate-400 transition-colors outline-none"
+                placeholder="seuemail@email.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
+              <label className="block text-sm font-medium text-slate-100 mb-2">
                 Senha
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete={isLogin ? "current-password" : "new-password"}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 transition-colors outline-none"
-                placeholder=""
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 text-white placeholder-slate-400 transition-colors outline-none"
+                placeholder="••••••••"
               />
             </div>
 
@@ -162,7 +187,7 @@ const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleResetPassword}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  className="text-sm font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
                 >
                   Esqueceu a senha?
                 </button>
@@ -172,7 +197,7 @@ const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-3.5 rounded-lg font-semibold shadow-lg hover:from-cyan-400 hover:to-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -185,14 +210,12 @@ const Login: React.FC = () => {
             </button>
           </form>
 
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}
-              {' '}
+          <div className="mt-6 text-center text-slate-200">
+            <p className="text-sm">
+              {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}{' '}
               <button
                 onClick={() => setIsLogin(!isLogin)}
-                className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                className="font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
               >
                 {isLogin ? 'Cadastre-se' : 'Faça login'}
               </button>
