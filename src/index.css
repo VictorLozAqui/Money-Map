@@ -17,3 +17,16 @@ code {
     monospace;
 }
 
+/* Mantém o fundo escuro nos campos mesmo com autofill do navegador */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #e5e7eb;
+  caret-color: #e5e7eb;
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s;
+  box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.8) inset;
+  -webkit-box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.8) inset;
+}
+
