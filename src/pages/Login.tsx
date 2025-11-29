@@ -52,8 +52,8 @@ const Login: React.FC = () => {
           return;
         }
         await signup(email, password, nome);
-        toast.success('Conta criada com sucesso!');
-        navigate('/');
+        toast.success('Conta criada! Verifique seu email para ativar.');
+        setIsLogin(true);
       }
     } catch (error: any) {
       console.error(error);
@@ -67,6 +67,8 @@ const Login: React.FC = () => {
         toast.error('Usuário não encontrado');
       } else if (error.code === 'auth/wrong-password') {
         toast.error('Senha incorreta');
+      } else if (error.code === 'auth/email-not-verified') {
+        toast.error('Confirme seu email. Reenviamos o link para você.');
       } else {
         toast.error(isLogin ? 'Erro ao fazer login' : 'Erro ao criar conta');
       }

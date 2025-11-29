@@ -6,6 +6,7 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updatePassword,
   EmailAuthProvider,
   reauthenticateWithCredential
@@ -41,17 +42,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Cria o documento do usuário no Firestore
+    // Envia verificacao e cria o documento do usuario no Firestore
+    await sendEmailVerification(user);
     await setDoc(doc(db, 'users', user.uid), {
       uid: user.uid,
       email: user.email,
       nome: nome,
       familyId: null
     });
+    await signOut(auth);
   };
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const user = credential.user;
+
+    if (!user.emailVerified) {
+      await sendEmailVerification(user);
+      await signOut(auth);
+      const error: any = new Error('Email não verificado');
+      error.code = 'auth/email-not-verified';
+      throw error;
+    }
   };
 
   const logout = async () => {
