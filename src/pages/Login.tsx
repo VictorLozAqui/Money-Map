@@ -52,7 +52,30 @@ const Login: React.FC = () => {
           return;
         }
         await signup(email, password, nome);
-        toast.success('Conta criada! Verifique seu email para ativar.');
+        toast.custom(
+          (t) => (
+            <div className="max-w-md w-full bg-slate-900 text-white px-4 py-3 rounded-lg shadow-lg border border-cyan-500/30 flex items-start gap-3">
+              <div className="flex-1 space-y-1">
+                <p className="font-semibold text-green-400">Conta criada!</p>
+                <p className="text-sm text-slate-200">
+                  Enviamos um email de confirmação. Abra o link para ativar sua conta.
+                </p>
+                <p className="text-xs text-slate-300">
+                  Dica: se não encontrar, verifique a pasta de spam/lixo eletrônico.
+                </p>
+              </div>
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="text-slate-300 hover:text-white font-bold leading-none px-2"
+                aria-label="Fechar aviso"
+                title="Fechar"
+              >
+                X
+              </button>
+            </div>
+          ),
+          { duration: Infinity }
+        );
         setIsLogin(true);
       }
     } catch (error: any) {
