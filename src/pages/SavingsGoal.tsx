@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { useFamily } from '../contexts/FamilyContext';
 import { useAuth } from '../contexts/AuthContext';
+import SavingsHistoryChart from '../components/charts/SavingsHistoryChart';
 import {
   collection,
   query,
@@ -30,6 +31,9 @@ const SavingsGoalPage: React.FC = () => {
   const [editing, setEditing] = useState(false);
   const [monthIncomes, setMonthIncomes] = useState(0);
   const [monthExpenses, setMonthExpenses] = useState(0);
+  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [historyMonths, setHistoryMonths] = useState(12);
 
   // Carregar meta ativa mais recente (com migração automática de metas antigas)
   useEffect(() => {
@@ -184,10 +188,18 @@ const SavingsGoalPage: React.FC = () => {
     );
 
     const unsubscribeIncomes = onSnapshot(incomesQuery, (snapshot) => {
-      const total = snapshot.docs
-        .map(doc => ({ ...doc.data(), data: doc.data().data.toDate() }))
-        .filter((inc: any) => inc.data >= monthStart && inc.data <= monthEnd)
-        .reduce((sum: number, inc: any) => sum + inc.valor, 0);
+      const incomesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        data: doc.data().data.toDate(),
+        createdAt: doc.data().createdAt?.toDate?.() ?? doc.data().createdAt
+      })) as Income[];
+
+      setIncomes(incomesData);
+
+      const total = incomesData
+        .filter(inc => inc.data >= monthStart && inc.data <= monthEnd)
+        .reduce((sum, inc) => sum + inc.valor, 0);
       setMonthIncomes(total);
     });
 
@@ -198,10 +210,18 @@ const SavingsGoalPage: React.FC = () => {
     );
 
     const unsubscribeExpenses = onSnapshot(expensesQuery, (snapshot) => {
-      const total = snapshot.docs
-        .map(doc => ({ ...doc.data(), data: doc.data().data.toDate() }))
-        .filter((exp: any) => exp.data >= monthStart && exp.data <= monthEnd)
-        .reduce((sum: number, exp: any) => sum + exp.valor, 0);
+      const expensesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        data: doc.data().data.toDate(),
+        createdAt: doc.data().createdAt?.toDate?.() ?? doc.data().createdAt
+      })) as Expense[];
+
+      setExpenses(expensesData);
+
+      const total = expensesData
+        .filter(exp => exp.data >= monthStart && exp.data <= monthEnd)
+        .reduce((sum, exp) => sum + exp.valor, 0);
       setMonthExpenses(total);
     });
 
@@ -491,6 +511,30 @@ const SavingsGoalPage: React.FC = () => {
               </div>
             </div>
           ) : null}
+        </div>
+
+        {/* Historico mensal */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Historico de poupanca mensal</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Ultimos {historyMonths} meses do grupo familiar</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Periodo</label>
+              <select
+                value={historyMonths}
+                onChange={(e) => setHistoryMonths(Number(e.target.value))}
+                className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              >
+                <option value={3}>3 meses</option>
+                <option value={6}>6 meses</option>
+                <option value={12}>12 meses</option>
+                <option value={24}>24 meses</option>
+              </select>
+            </div>
+          </div>
+          <SavingsHistoryChart incomes={incomes} expenses={expenses} months={historyMonths} />
         </div>
       </div>
     </Layout>
