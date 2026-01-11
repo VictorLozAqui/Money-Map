@@ -180,6 +180,30 @@ const Reports: React.FC = () => {
         ]
       });
 
+      doc.text('Comparativo Mensal', 14, (doc as any).lastAutoTable.finalY + 15);
+
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 20,
+        head: [['Mês', 'Rendimentos', 'Gastos', 'Saldo']],
+        body: monthlyComparison.map(month => [
+          month.month,
+          month.rendimentos.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+          month.gastos.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+          month.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+        ])
+      });
+
+      doc.text('Poupança Mensal', 14, (doc as any).lastAutoTable.finalY + 15);
+
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 20,
+        head: [['Mês', 'Poupança']],
+        body: monthlyComparison.map(month => [
+          month.month,
+          month.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+        ])
+      });
+
       doc.text('Rendimentos', 14, (doc as any).lastAutoTable.finalY + 15);
       
       autoTable(doc, {
@@ -263,6 +287,14 @@ const Reports: React.FC = () => {
       ];
       const comparisonWs = XLSX.utils.aoa_to_sheet(comparisonData);
       XLSX.utils.book_append_sheet(wb, comparisonWs, 'Comparativo');
+
+      // Poupança Mensal
+      const savingsData = [
+        ['Mês', 'Poupança'],
+        ...monthlyComparison.map(m => [m.month, m.saldo])
+      ];
+      const savingsWs = XLSX.utils.aoa_to_sheet(savingsData);
+      XLSX.utils.book_append_sheet(wb, savingsWs, 'Poupança');
 
       const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       saveAs(new Blob([wbout], { type: 'application/octet-stream' }), `relatorio_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
