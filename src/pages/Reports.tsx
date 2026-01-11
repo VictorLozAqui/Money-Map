@@ -4,7 +4,7 @@ import { useFamily } from '../contexts/FamilyContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { Income, Expense } from '../types';
-import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Download, Filter, Calendar, Tag, TrendingUp, TrendingDown, DollarSign, User } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -27,6 +27,15 @@ const Reports: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedMember, setSelectedMember] = useState('');
   const [compareMonths, setCompareMonths] = useState(3);
+
+  const parseDateInput = (value: string, endOfDay = false) => {
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) return null;
+
+    return endOfDay
+      ? new Date(year, month - 1, day, 23, 59, 59, 999)
+      : new Date(year, month - 1, day, 0, 0, 0, 0);
+  };
 
   useEffect(() => {
     if (!family) {
@@ -72,13 +81,17 @@ const Reports: React.FC = () => {
   }, [family]);
 
   // Filtrar dados
+  const rangeStart = parseDateInput(startDate) ?? startOfMonth(new Date());
+  const rangeEnd = parseDateInput(endDate, true) ?? endOfMonth(new Date());
+  const isValidRange = rangeStart <= rangeEnd;
+
   const filteredIncomes = incomes.filter(income => {
-    const dateInRange = income.data >= new Date(startDate) && income.data <= new Date(endDate);
+    const dateInRange = isValidRange && income.data >= rangeStart && income.data <= rangeEnd;
     return dateInRange;
   });
 
   const filteredExpenses = expenses.filter(expense => {
-    const dateInRange = expense.data >= new Date(startDate) && expense.data <= new Date(endDate);
+    const dateInRange = isValidRange && expense.data >= rangeStart && expense.data <= rangeEnd;
     const categoryMatch = !selectedCategory || expense.tipo === selectedCategory;
     const memberMatch = !selectedMember || expense.addedBy === selectedMember;
     return dateInRange && categoryMatch && memberMatch;
@@ -93,20 +106,28 @@ const Reports: React.FC = () => {
   const categories = [...new Set(expenses.map(e => e.tipo))];
 
   // Comparativo mensal
-  const monthlyComparison = Array.from({ length: compareMonths }, (_, i) => {
-    const monthStart = startOfMonth(subMonths(new Date(), i));
-    const monthEnd = endOfMonth(subMonths(new Date(), i));
+  const monthsInterval = isValidRange
+    ? eachMonthOfInterval({
+      start: startOfMonth(rangeStart),
+      end: startOfMonth(rangeEnd)
+    })
+    : [];
 
-    const monthIncomes = incomes.filter(
-      income => income.data >= monthStart && income.data <= monthEnd
-    ).reduce((sum, i) => sum + i.valor, 0);
+  const visibleMonths = monthsInterval.length > compareMonths
+    ? monthsInterval.slice(monthsInterval.length - compareMonths)
+    : monthsInterval;
 
-    const monthExpenses = expenses.filter(expense => {
-      const dateInRange = expense.data >= monthStart && expense.data <= monthEnd;
-      const categoryMatch = !selectedCategory || expense.tipo === selectedCategory;
-      const memberMatch = !selectedMember || expense.addedBy === selectedMember;
-      return dateInRange && categoryMatch && memberMatch;
-    }).reduce((sum, e) => sum + e.valor, 0);
+  const monthlyComparison = visibleMonths.map(month => {
+    const monthStart = startOfMonth(month);
+    const monthEnd = endOfMonth(month);
+
+    const monthIncomes = filteredIncomes
+      .filter(income => income.data >= monthStart && income.data <= monthEnd)
+      .reduce((sum, i) => sum + i.valor, 0);
+
+    const monthExpenses = filteredExpenses
+      .filter(expense => expense.data >= monthStart && expense.data <= monthEnd)
+      .reduce((sum, e) => sum + e.valor, 0);
 
     return {
       month: format(monthStart, 'MMM yyyy', { locale: ptBR }),
@@ -114,7 +135,14 @@ const Reports: React.FC = () => {
       gastos: monthExpenses,
       saldo: monthIncomes - monthExpenses
     };
-  }).reverse();
+  });
+
+  const sortedFilteredIncomes = [...filteredIncomes].sort(
+    (a, b) => a.data.getTime() - b.data.getTime()
+  );
+  const sortedFilteredExpenses = [...filteredExpenses].sort(
+    (a, b) => a.data.getTime() - b.data.getTime()
+  );
 
   // Exportar para PDF
   const exportToPDF = () => {
@@ -126,7 +154,7 @@ const Reports: React.FC = () => {
       
       doc.setFontSize(12);
       doc.text(`Família: ${family?.nome}`, 14, 30);
-      doc.text(`Período: ${format(new Date(startDate), 'dd/MM/yyyy')} - ${format(new Date(endDate), 'dd/MM/yyyy')}`, 14, 37);
+      doc.text(`Período: ${format(rangeStart, 'dd/MM/yyyy')} - ${format(rangeEnd, 'dd/MM/yyyy')}`, 14, 37);
       
       let yPos = 37;
       if (selectedCategory) {
@@ -157,7 +185,7 @@ const Reports: React.FC = () => {
       autoTable(doc, {
         startY: (doc as any).lastAutoTable.finalY + 20,
         head: [['Data', 'Nome', 'Valor']],
-        body: filteredIncomes.map(income => [
+        body: sortedFilteredIncomes.map(income => [
           format(income.data, 'dd/MM/yyyy'),
           income.nome,
           income.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
@@ -169,7 +197,7 @@ const Reports: React.FC = () => {
       autoTable(doc, {
         startY: (doc as any).lastAutoTable.finalY + 20,
         head: [['Data', 'Nome', 'Categoria', 'Valor']],
-        body: filteredExpenses.map(expense => [
+        body: sortedFilteredExpenses.map(expense => [
           format(expense.data, 'dd/MM/yyyy'),
           expense.nome,
           expense.tipo,
@@ -192,6 +220,9 @@ const Reports: React.FC = () => {
 
       // Resumo
       const summaryData = [
+        ['Família', family?.nome ?? ''],
+        ['Período', `${format(rangeStart, 'dd/MM/yyyy')} - ${format(rangeEnd, 'dd/MM/yyyy')}`],
+        [''],
         ['Métrica', 'Valor'],
         ['Total de Rendimentos', totalIncome],
         ['Total de Gastos', totalExpense],
@@ -203,7 +234,7 @@ const Reports: React.FC = () => {
       // Rendimentos
       const incomesData = [
         ['Data', 'Nome', 'Valor'],
-        ...filteredIncomes.map(income => [
+        ...sortedFilteredIncomes.map(income => [
           format(income.data, 'dd/MM/yyyy'),
           income.nome,
           income.valor
@@ -215,7 +246,7 @@ const Reports: React.FC = () => {
       // Gastos
       const expensesData = [
         ['Data', 'Nome', 'Categoria', 'Valor'],
-        ...filteredExpenses.map(expense => [
+        ...sortedFilteredExpenses.map(expense => [
           format(expense.data, 'dd/MM/yyyy'),
           expense.nome,
           expense.tipo,
